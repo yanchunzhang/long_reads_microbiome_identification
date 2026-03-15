@@ -14,5 +14,9 @@ Microbial reads are grouped at the genus level, considering only genera with at 
 6. Median(L)adj calculation
 The Median(L)adj ratio is computed as:
 
-Median(L)adj = median microbial read length (per genus) / median human read length
+**Median(L)adj** = median microbial read length (per genus) / median human read length
 This metric provides a normalized measure of microbial fragment length relative to host DNA.
+
+
+Reference
+https://www.biorxiv.org/content/10.64898/2026.02.02.703393v1
