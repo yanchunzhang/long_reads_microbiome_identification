@@ -1,0 +1,42 @@
+__default__:
+  queue: premium
+  time: "6:00"
+  mem_mb: 8000
+  extra: ""
+  log: "log/{rule}.{wildcards}.%J.log"
+
+unmapped_analysis:
+  queue: premium
+  time: "4:00"
+  mem_mb: 12000
+  extra: ""
+
+mapped_human_stats:
+  queue: premium
+  time: "6:00"
+  mem_mb: 6000
+  extra: ""
+
+krakenuniq:
+  queue: premium
+  time: "2:00"
+  mem_mb: 180000
+  extra: "-R himem"
+
+megablast:
+  queue: premium
+  time: "6:00"
+  mem_mb: 30000
+  extra: "-R himem"
+
+process_blast_chunks:
+  queue: express
+  time: "2:00"
+  mem_mb: 30000
+  extra: ""
+
+median_length_adj:
+  queue: premium
+  time: "2:00"
+  mem_mb: 8000
+  extra: ""

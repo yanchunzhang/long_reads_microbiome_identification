@@ -1,0 +1,28 @@
+configfile: "config.yaml"
+
+import glob
+import os
+
+os.makedirs("logs", exist_ok=True)
+
+if config.get("samples"):
+    SAMPLES = config["samples"]
+else:
+    SAMPLES = sorted([
+        os.path.basename(x).replace(".bam", "")
+        for x in glob.glob("*.bam")
+        if "unmapp" not in x and "mm2" not in x
+    ])
+
+rule all:
+    input:
+        expand("{sample}.median_l_adj.txt", sample=SAMPLES),
+        expand("{sample}.microbiome.sum_by_length_per_genus.txt", sample=SAMPLES)
+
+include: "rules/unmapped.smk"
+include: "rules/samtools_stats.smk"
+include: "rules/krakenuniq.smk"
+include: "rules/kraken_process.smk"
+include: "rules/blast.smk"
+include: "rules/blast_process.smk"
+include: "rules/median_length_adj.smk"

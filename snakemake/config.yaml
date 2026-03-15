@@ -1,0 +1,28 @@
+samples: []
+
+scriptsdir: "scripts"
+kraken_db: "/sc/arion/projects/schzrnas/zhangy40/softwares/kuniq_microbialdb_minus_kdb.20230808"
+blastdb: "/hpc/users/zhangy40/schzrnas/softwares/blast_db/nt"
+
+lsf:
+  project: "acc_schzrnas"
+  queue_default: "premium"
+  queue_express: "express"
+
+threads:
+  unmapped_analysis: 10
+  samtools_stats: 10
+  krakenuniq: 2
+  megablast: 16
+  median_length_adj: 1
+
+resources:
+  unmapped_analysis_mem_mb: 12000
+  samtools_stats_mem_mb: 6000
+  krakenuniq_mem_mb: 180000
+  megablast_mem_mb: 30000
+  blast_process_mem_mb: 30000
+  median_length_adj_mem_mb: 8000
+
+batch:
+  blast_chunk_size: 10000
