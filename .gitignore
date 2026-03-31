@@ -1,0 +1,39 @@
+# Data files
+*.bam
+*.bai
+*.fasta
+*.fasta.gz
+*.fq
+*.fq.gz
+*.fastq
+*.fastq.gz
+*.txt
+*.csv
+
+# Pipeline outputs
+results/
+work/
+logs/
+split_fasta/
+blast_chunks/
+
+# Nextflow runtime
+.nextflow/
+.nextflow.log*
+nf_run*.err
+nf_run*.out
+nf_run.log
+
+# Singularity image (too large for git)
+*.sif
+
+# Snakemake runtime
+.snakemake/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# System
+.DS_Store

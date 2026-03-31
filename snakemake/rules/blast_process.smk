@@ -3,11 +3,11 @@ rule process_blast:
         blast="{sample}.blast.txt"
     output:
         processed="{sample}.blast.processed.txt"
-    threads: 10
+    threads: config.get("threads", {}).get("megablast", 10)
     resources:
-        mem_mb=8000
+        mem_mb=config.get("resources", {}).get("blast_process_mem_mb", 8000)
     log:
-        "logs/{sample}.blast_process.log"
+        "logs/{sample}.process_blast.log"
     shell:
         r"""
         python {config[scriptsdir]}/blast_result_process.mt.py \
@@ -24,8 +24,10 @@ rule annotate_blast_lengths:
     output:
         add_length="{sample}.blast.processed.add_length.txt",
         other_microbiome="{sample}.blast.microbiome.txt"
+    resources:
+        mem_mb=config.get("resources", {}).get("blast_process_mem_mb", 8000)
     log:
-        "logs/{sample}.blast_process.log"
+        "logs/{sample}.annotate_blast_lengths.log"
     shell:
         r"""
         set -o pipefail

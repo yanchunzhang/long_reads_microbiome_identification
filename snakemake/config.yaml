@@ -3,6 +3,7 @@ samples: []
 scriptsdir: "scripts"
 kraken_db: "/sc/arion/projects/schzrnas/zhangy40/softwares/kuniq_microbialdb_minus_kdb.20230808"
 blastdb: "/hpc/users/zhangy40/schzrnas/softwares/blast_db/nt"
+t2t_ref: "/sc/arion/projects/schzrnas/zhangy40/ref/CHM13_T2T/chm13v2.0.mmi"
 
 lsf:
   project: "acc_schzrnas"

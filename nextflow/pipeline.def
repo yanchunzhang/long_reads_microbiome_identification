@@ -1,0 +1,50 @@
+Bootstrap: docker
+From: continuumio/miniconda3:24.1.2-0
+
+%labels
+    Author Yanchun Zhang
+    Version 1.0.0
+    Description Long-read microbiome identification pipeline
+
+%post
+    # Update and install system dependencies
+    apt-get update && apt-get install -y \
+        wget \
+        curl \
+        gcc \
+        make \
+        zlib1g-dev \
+        libbz2-dev \
+        liblzma-dev \
+        libncurses5-dev \
+        && apt-get clean
+
+    # Configure conda channels
+    conda config --add channels bioconda
+    conda config --add channels conda-forge
+    conda config --set channel_priority strict
+
+    # Install all tools via conda
+    conda install -y \
+        "samtools>=1.18" \
+        minimap2 \
+        seqkit \
+        blast \
+        krakenuniq \
+        taxonkit \
+        pandas \
+        python>=3.8
+
+    conda clean -a
+
+%environment
+    export PATH=/opt/conda/bin:$PATH
+
+%test
+    samtools --version | head -1
+    minimap2 --version
+    seqkit version
+    blastn -version | head -1
+    krakenuniq --version 2>&1 | head -1
+    taxonkit version
+    python3 -c "import pandas; print('pandas', pandas.__version__)"

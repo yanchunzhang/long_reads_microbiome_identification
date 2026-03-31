@@ -72,7 +72,9 @@ rule megablast_chunk:
     output:
         blast=temp("blast_chunks/{sample}/{chunk}.blast.txt")
     threads:
-        8
+        config.get("threads", {}).get("megablast", 8)
+    resources:
+        mem_mb=config.get("resources", {}).get("megablast_mem_mb", 30000)
     log:
         "logs/{sample}.{chunk}.megablast.log"
     shell:

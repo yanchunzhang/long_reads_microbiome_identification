@@ -1,0 +1,10 @@
+name: longread-microbiome
+channels:
+  - bioconda
+  - conda-forge
+  - defaults
+dependencies:
+  - python>=3.8
+  - krakenuniq=1.0.4
+  - taxonkit
+  - pandas=2.3.3
