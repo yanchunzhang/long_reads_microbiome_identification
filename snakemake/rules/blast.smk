@@ -5,7 +5,7 @@ BLAST_SPLIT_NSEQ = int(config.get("blast_split_nseq", 5000))
 
 checkpoint split_blast_query_fasta:
     input:
-        fasta="{sample}.krakenuniq.microbiome.fasta"
+        fasta="{sample}.merged.krakenuniq.microbiome.fasta" if USE_SUPPL_DB else "{sample}.krakenuniq.microbiome.fasta"
     output:
         split_dir=directory("split_fasta/{sample}")
     params:

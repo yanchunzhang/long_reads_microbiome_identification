@@ -5,6 +5,10 @@ import os
 
 os.makedirs("logs", exist_ok=True)
 
+# Resolve use_suppl_db robustly — handles bool (from config.yaml) and
+# string "false" (from --config use_suppl_db=false on the CLI).
+USE_SUPPL_DB = str(config.get("use_suppl_db", True)).lower() != "false"
+
 if config.get("samples"):
     SAMPLES = config["samples"]
 else:
@@ -22,7 +26,10 @@ rule all:
 include: "rules/unmapped.smk"
 include: "rules/samtools_stats.smk"
 include: "rules/krakenuniq.smk"
+include: "rules/krakenuniq_suppl.smk"
 include: "rules/kraken_process.smk"
+include: "rules/kraken_process_suppl.smk"
+include: "rules/merge_kraken.smk"
 include: "rules/blast.smk"
 include: "rules/blast_process.smk"
 include: "rules/median_length_adj.smk"

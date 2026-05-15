@@ -5,7 +5,10 @@ nextflow.enable.dsl=2
 include { UNMAPPED_ANALYSIS }       from './modules/unmapped'
 include { MAPPED_HUMAN_STATS }      from './modules/samtools_stats'
 include { KRAKENUNIQ }              from './modules/krakenuniq'
+include { KRAKENUNIQ_SUPPL }        from './modules/krakenuniq_suppl'
 include { KRAKEN_PROCESS }          from './modules/kraken_process'
+include { KRAKEN_PROCESS_SUPPL }    from './modules/kraken_process_suppl'
+include { MERGE_KRAKEN }            from './modules/merge_kraken'
 include { SPLIT_BLAST_QUERY;
           MEGABLAST_CHUNK;
           MERGE_BLAST_CHUNKS }      from './modules/blast'
@@ -41,14 +44,31 @@ workflow {
     UNMAPPED_ANALYSIS(ch_bam)
     MAPPED_HUMAN_STATS(ch_bam)
 
-    // Step 2: KrakenUniq taxonomic classification on unmapped FASTA
+    // Step 2: KrakenUniq — primary DB always runs; supplemental is optional
     KRAKENUNIQ(UNMAPPED_ANALYSIS.out)
-
-    // Step 3: Filter / post-process KrakenUniq output
     KRAKEN_PROCESS(KRAKENUNIQ.out)
 
-    // Step 4: Split microbiome FASTA → run megaBLAST per chunk (in parallel) → merge
-    SPLIT_BLAST_QUERY(KRAKEN_PROCESS.out.fasta)
+    if (params.use_suppl_db.toString().toLowerCase() != 'false') {
+        // Step 2b: Supplemental DB in parallel
+        KRAKENUNIQ_SUPPL(UNMAPPED_ANALYSIS.out)
+        KRAKEN_PROCESS_SUPPL(KRAKENUNIQ_SUPPL.out)
+
+        // Step 3: Merge primary + supplemental (deduplicate by read ID)
+        ch_merge = KRAKEN_PROCESS.out.fasta
+            .join(KRAKEN_PROCESS_SUPPL.out.fasta)
+            .join(KRAKEN_PROCESS.out.info)
+            .join(KRAKEN_PROCESS_SUPPL.out.info)
+        MERGE_KRAKEN(ch_merge)
+
+        ch_blast_fasta   = MERGE_KRAKEN.out.fasta
+        ch_annotate_info = MERGE_KRAKEN.out.info
+    } else {
+        ch_blast_fasta   = KRAKEN_PROCESS.out.fasta
+        ch_annotate_info = KRAKEN_PROCESS.out.info
+    }
+
+    // Step 4: Split FASTA → run megaBLAST per chunk (in parallel) → merge
+    SPLIT_BLAST_QUERY(ch_blast_fasta)
 
     // Record per-sample chunk counts from the split directory
     ch_counts = SPLIT_BLAST_QUERY.out
@@ -83,7 +103,7 @@ workflow {
     PROCESS_BLAST(MERGE_BLAST_CHUNKS.out)
 
     // Step 6: Annotate BLAST hits with KrakenUniq length/taxonomy info
-    ch_annotate = KRAKEN_PROCESS.out.info
+    ch_annotate = ch_annotate_info
         .join(PROCESS_BLAST.out)
 
     ANNOTATE_BLAST_LENGTHS(ch_annotate)

@@ -1,4 +1,7 @@
 
+source $(conda info --base)/etc/profile.d/conda.sh
+conda activate myenv
+
 prefix=$3
 classified_out="$prefix.classified_by_krakenuniq"
 input=$2

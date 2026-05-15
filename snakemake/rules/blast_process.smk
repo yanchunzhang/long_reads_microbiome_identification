@@ -19,7 +19,7 @@ rule process_blast:
 
 rule annotate_blast_lengths:
     input:
-        info="{sample}.krakenuniq.info_collection.flt",
+        info="{sample}.merged.krakenuniq.info_collection.flt" if USE_SUPPL_DB else "{sample}.krakenuniq.info_collection.flt",
         processed="{sample}.blast.processed.txt"
     output:
         add_length="{sample}.blast.processed.add_length.txt",
