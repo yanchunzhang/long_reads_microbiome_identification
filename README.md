@@ -15,7 +15,9 @@ BAM (long-read, aligned to human reference)
   │
   ├── 1. Extract unmapped reads (two-round filtering: GRCh38 → T2T CHM13v2)
   │
-  ├── 2. KrakenUniq taxonomic classification
+  ├── 2a. KrakenUniq — primary microbial DB
+  ├── 2b. KrakenUniq — supplemental viral+fungal DB (optional, use_suppl_db=true)
+  │         └── merge primary + supplemental hits (primary DB has priority)
   │
   ├── 3. megaBLAST validation (parallelized by chunk)
   │
@@ -28,7 +30,7 @@ BAM (long-read, aligned to human reference)
 
 1. **Human read filtering** — Unmapped reads are extracted from the input BAM (hg38-aligned) using samtools, then re-aligned to the T2T CHM13v2 reference with minimap2. Reads remaining unmapped after both steps are retained as candidate non-human reads.
 2. **Human read length distribution** — `samtools stats` is run on the original BAM to obtain the median human read length, used later for normalization.
-3. **Taxonomic classification** — Candidate reads are classified with KrakenUniq against the MicrobialDB database for preliminary taxonomic assignments.
+3. **Taxonomic classification** — Candidate reads are classified with KrakenUniq against the primary MicrobialDB database. If `use_suppl_db=true`, a supplemental viral+fungal database is run in parallel and the results are merged (primary DB has priority; duplicate read IDs are deduplicated).
 4. **BLAST validation** — KrakenUniq-classified microbial reads are aligned to NCBI nt using megaBLAST. The best hit per read (largest alignment coverage) is retained; only hits with coverage >0.5 are kept.
 5. **Genus-level aggregation** — Microbial reads are grouped by genus (≥5 reads per genus required).
 6. **Median(L)adj calculation** — The key metric:
@@ -70,9 +72,21 @@ Both implementations produce identical outputs.
 
 | Database | Size | Notes |
 |---|---|---|
-| KrakenUniq microbial DB | ~180 GB | See [KrakenUniq docs](https://github.com/fbreitwieser/krakenuniq) |
+| KrakenUniq microbial DB (primary) | ~180 GB | See [KrakenUniq docs](https://github.com/fbreitwieser/krakenuniq) |
+| KrakenUniq supplemental DB (viral+fungal) | ~47 GB | Optional; build with `db/build_supplemental_db_v2.sh` |
 | NCBI nt (BLAST) | ~500 GB | `update_blastdb.pl nt` |
 | T2T CHM13v2 reference | ~3 GB | Pre-built minimap2 index (`.mmi`) recommended |
+
+#### Building the supplemental database
+
+The supplemental database covers viral (all complete genomes) and fungal (complete genome + chromosome, full genome representation) assemblies from NCBI RefSeq — filling coverage gaps in the primary MicrobialDB.
+
+```bash
+# Edit paths at the top of the script, then submit to LSF:
+bsub < db/build_supplemental_db_v2.sh
+```
+
+The script uses `krakenuniq-download` for automatic assembly filtering and builds the database with `krakenuniq-build`. Estimated build time: 2–4 hours on 8 threads.
 
 ## Installation
 
@@ -138,12 +152,19 @@ nextflow run main.nf -profile lsf --bam_dir /path/to/bams -resume
 |---|---|---|
 | `--bam_dir` | Directory containing input BAM files | `.` |
 | `--samples` | Comma-separated sample list | auto-discover `*.bam` |
-| `--kraken_db` | Path to KrakenUniq database | required |
+| `--kraken_db` | Path to primary KrakenUniq database | required |
+| `--kraken_db_suppl` | Path to supplemental KrakenUniq database | required if `use_suppl_db=true` |
+| `--use_suppl_db` | Run supplemental DB and merge results | `true` |
 | `--blastdb` | Path to NCBI nt BLAST database | required |
 | `--t2t_ref` | Path to T2T CHM13v2 minimap2 index | required |
 | `--outdir` | Output directory | `results/` |
 | `--scratch_dir` | Scratch space for BLAST temp files | `/tmp` |
 | `--blast_split_nseq` | Reads per BLAST chunk | `5000` |
+
+To skip the supplemental DB:
+```bash
+nextflow run main.nf -profile lsf --use_suppl_db false ...
+```
 
 ---
 
@@ -170,6 +191,8 @@ samples: []                  # leave empty to auto-discover *.bam
 
 scriptsdir: "scripts"
 kraken_db: "/path/to/krakenuniq_db"
+kraken_db_suppl: "/path/to/supplemental_db"  # required if use_suppl_db: true
+use_suppl_db: true           # set false to skip supplemental DB
 blastdb: "/path/to/nt"
 t2t_ref: "/path/to/chm13v2.0.mmi"
 
@@ -181,6 +204,11 @@ threads:
 resources:
   krakenuniq_mem_mb: 180000
   megablast_mem_mb: 30000
+```
+
+To skip the supplemental DB via CLI:
+```bash
+snakemake --snakefile snakefile --config use_suppl_db=false ...
 ```
 
 ---
@@ -204,6 +232,8 @@ Per sample:
 ```
 long_reads_microbiome_identification/
 ├── README.md
+├── db/
+│   └── build_supplemental_db_v2.sh   # build viral+fungal supplemental KrakenUniq DB
 ├── nextflow/
 │   ├── main.nf
 │   ├── nextflow.config
@@ -212,7 +242,10 @@ long_reads_microbiome_identification/
 │   ├── modules/
 │   │   ├── unmapped.nf
 │   │   ├── krakenuniq.nf
+│   │   ├── krakenuniq_suppl.nf       # supplemental DB classification
 │   │   ├── kraken_process.nf
+│   │   ├── kraken_process_suppl.nf   # supplemental DB post-processing
+│   │   ├── merge_kraken.nf           # merge primary + supplemental hits
 │   │   ├── blast.nf
 │   │   ├── blast_process.nf
 │   │   ├── samtools_stats.nf
@@ -232,7 +265,10 @@ long_reads_microbiome_identification/
     ├── rules/
     │   ├── unmapped.smk
     │   ├── krakenuniq.smk
+    │   ├── krakenuniq_suppl.smk       # supplemental DB classification
     │   ├── kraken_process.smk
+    │   ├── kraken_process_suppl.smk   # supplemental DB post-processing
+    │   ├── merge_kraken.smk           # merge primary + supplemental hits
     │   ├── blast.smk
     │   ├── blast_process.smk
     │   ├── samtools_stats.smk
