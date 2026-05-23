@@ -1,21 +1,30 @@
-#unmapped_analysis.sh; including steps of get_unmapped reads from input bam file; 2nd round of mapping to t2t ref; get unmapped reads from t2t mapping result bam file.
+#!/usr/bin/env bash
+# unmapped_analysis.sh
+# Get unmapped reads from an input BAM, map them to the T2T reference, then
+# emit reads still unmapped after T2T filtering.
+
+set -euo pipefail
+
 module load samtools/1.21
 module load minimap2
 
-#samtools version
-#1st round of getting unmapped reads into an unmapped.bam
 sample=$1
-input_bam=$2
-thread=$3
+input_bam=$(realpath "$2")
+outdir=$(realpath "$3")
+thread=$4
+scriptsdir=$(realpath "$5")
+t2t_ref=$(realpath "$6")
 
-scriptsdir="scripts"
+mkdir -p "$outdir"
 
-sh $scriptsdir/get_unmapped.sh $sample $input_bam $thread
+(
+    cd "$outdir"
 
-t2t_ref="/sc/arion/projects/schzrnas/zhangy40/ref/CHM13_T2T/chm13v2.0.mmi"
-unmapped_fq="$sample.unmapped.fq.gz"
-outprefix="$sample.unmapped.t2t"
-sh $scriptsdir/long_read.mm2.no_sort.sh $unmapped_fq $t2t_ref $outprefix $thread
-sh $scriptsdir/get_unmapped.sh $sample.after_t2t $sample.unmapped.t2t.mm2.bam $thread
+    sh "$scriptsdir/get_unmapped.sh" "$sample" "$input_bam" "$thread"
 
+    unmapped_fq="$sample.unmapped.fq.gz"
+    outprefix="$sample.unmapped.t2t"
+    sh "$scriptsdir/long_read.mm2.no_sort.sh" "$unmapped_fq" "$t2t_ref" "$outprefix" "$thread"
 
+    sh "$scriptsdir/get_unmapped.sh" "$sample.after_t2t" "$sample.unmapped.t2t.mm2.bam" "$thread"
+)

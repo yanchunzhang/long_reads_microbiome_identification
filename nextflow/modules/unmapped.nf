@@ -16,6 +16,6 @@ process UNMAPPED_ANALYSIS {
     script:
     """
     sh ${params.scriptsdir}/unmapped_analysis.sh \\
-        ${sample} ${bam} ${task.cpus} ${params.scriptsdir} ${params.t2t_ref}
+        ${sample} ${bam} . ${task.cpus} ${params.scriptsdir} ${params.t2t_ref}
     """
 }

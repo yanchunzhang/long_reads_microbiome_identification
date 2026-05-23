@@ -1,11 +1,11 @@
 rule median_length_adj:
     input:
-        stats="{sample}.bam.mapped_human_reads_only.stats.txt",
-        microbe="{sample}.blast.microbiome.txt"
+        stats="{sample}/{sample}.bam.mapped_human_reads_only.stats.txt.gz",
+        microbe="{sample}/{sample}.blast.microbiome.txt"
 
     output:
-        median_L_adj="{sample}.median_l_adj.txt",
-        sum="{sample}.microbiome.sum_by_length_per_genus.txt"
+        median_L_adj="{sample}/{sample}.median_l_adj.txt",
+        sum="{sample}/{sample}.microbiome.sum_by_length_per_genus.txt"
 
     log:
         "logs/{sample}.median_length.log"

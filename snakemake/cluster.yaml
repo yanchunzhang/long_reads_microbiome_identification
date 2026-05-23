@@ -23,13 +23,19 @@ krakenuniq:
   mem_mb: 180000
   extra: "-R himem"
 
-megablast:
+krakenuniq_suppl:
+  queue: premium
+  time: "2:00"
+  mem_mb: 60000
+  extra: "-R himem"
+
+megablast_chunk:
   queue: premium
   time: "6:00"
   mem_mb: 30000
   extra: "-R himem"
 
-process_blast_chunks:
+process_blast:
   queue: express
   time: "2:00"
   mem_mb: 30000

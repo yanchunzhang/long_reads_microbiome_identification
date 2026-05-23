@@ -20,7 +20,7 @@ include { MEDIAN_LENGTH_ADJ }       from './modules/median_length_adj'
 workflow {
 
     // Build sample → BAM channel
-    // If params.samples is non-empty, use it; otherwise auto-discover *.bam
+    // If params.samples is non-empty, use it; otherwise auto-discover */*.bam.
     // Handles both a config list (["A1","A2"]) and a CLI comma-separated
     // string (--samples A1,A2,A3) by tokenising on commas when needed.
     if (params.samples) {
@@ -30,12 +30,12 @@ workflow {
 
         ch_bam = Channel
             .from(sample_list)
-            .map { sample -> tuple(sample.trim(), file("${params.bam_dir}/${sample.trim()}.bam")) }
+            .map { sample -> tuple(sample.trim(), file("${params.bam_dir}/${sample.trim()}/${sample.trim()}.bam")) }
     } else {
         ch_bam = Channel
-            .fromPath("${params.bam_dir}/*.bam")
+            .fromPath("${params.bam_dir}/*/*.bam")
             .filter { bam -> !bam.name.contains("unmapp") && !bam.name.contains("mm2") }
-            .map    { bam -> tuple(bam.simpleName, bam) }
+            .map    { bam -> tuple(bam.parent.name, bam) }
             .toSortedList { a, b -> a[0] <=> b[0] }
             .flatMap()
     }

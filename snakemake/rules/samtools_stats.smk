@@ -1,8 +1,8 @@
 rule mapped_human_stats:
     input:
-        bam="{sample}.bam"
+        bam="{sample}/{sample}.bam"
     output:
-        stats="{sample}.bam.mapped_human_reads_only.stats.txt"
+        stats="{sample}/{sample}.bam.mapped_human_reads_only.stats.txt.gz"
     threads:
         config.get("samtools_stats_threads", 10)
     resources:
@@ -13,7 +13,7 @@ rule mapped_human_stats:
         r"""
         set -euo pipefail
 
-        sh {config[scriptsdir]}/samtools_stats.mapped_human_reads_only.sh \
-          {input.bam} \
-          {threads} > {log} 2>&1
+        samtools view -@ {threads} {input.bam} -h -F4 | \
+          samtools stats | \
+          gzip > {output.stats} 2> {log}
         """

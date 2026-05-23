@@ -1,8 +1,8 @@
 rule unmapped_analysis:
     input:
-        "{sample}.bam"
+        "{sample}/{sample}.bam"
     output:
-        "{sample}.after_t2t.unmapped.fasta.gz"
+        "{sample}/{sample}.after_t2t.unmapped.fasta.gz"
     threads: 10
     resources:
         mem_mb=8000
@@ -11,5 +11,6 @@ rule unmapped_analysis:
     shell:
         """
         sh {config[scriptsdir]}/unmapped_analysis.sh \
-        {wildcards.sample} {input} {threads} {config[scriptsdir]} {config[t2t_ref]} > {log} 2>&1
+        {wildcards.sample} {input} {wildcards.sample} {threads} \
+        {config[scriptsdir]} {config[t2t_ref]} > {log} 2>&1
         """

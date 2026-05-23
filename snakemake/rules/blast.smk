@@ -5,9 +5,9 @@ BLAST_SPLIT_NSEQ = int(config.get("blast_split_nseq", 5000))
 
 checkpoint split_blast_query_fasta:
     input:
-        fasta="{sample}.merged.krakenuniq.microbiome.fasta" if USE_SUPPL_DB else "{sample}.krakenuniq.microbiome.fasta"
+        fasta="{sample}/{sample}.merged.krakenuniq.microbiome.fasta" if USE_SUPPL_DB else "{sample}/{sample}.krakenuniq.microbiome.fasta"
     output:
-        split_dir=directory("split_fasta/{sample}")
+        split_dir=directory("{sample}/split_fasta")
     params:
         nseq=BLAST_SPLIT_NSEQ
     log:
@@ -39,7 +39,7 @@ checkpoint split_blast_query_fasta:
             exit 1
         fi
         """
-        
+
 
 def get_split_fasta_files(wildcards):
     ckpt = checkpoints.split_blast_query_fasta.get(sample=wildcards.sample)
@@ -62,15 +62,15 @@ def get_blast_chunk_outputs(wildcards):
     outputs = []
     for f in fasta_files:
         chunk = os.path.basename(f).rsplit(".fa", 1)[0]
-        outputs.append(f"blast_chunks/{wildcards.sample}/{chunk}.blast.txt")
+        outputs.append(f"{wildcards.sample}/blast_chunks/{chunk}.blast.txt")
     return outputs
 
 
 rule megablast_chunk:
     input:
-        fasta="split_fasta/{sample}/{chunk}.fa"
+        fasta="{sample}/split_fasta/{chunk}.fa"
     output:
-        blast=temp("blast_chunks/{sample}/{chunk}.blast.txt")
+        blast=temp("{sample}/blast_chunks/{chunk}.blast.txt")
     threads:
         config.get("threads", {}).get("megablast", 8)
     resources:
@@ -81,7 +81,7 @@ rule megablast_chunk:
         r"""
         set -euo pipefail
 
-        mkdir -p blast_chunks/{wildcards.sample}
+        mkdir -p {wildcards.sample}/blast_chunks
 
         sh {config[scriptsdir]}/megablast.sh \
           {input.fasta} \
@@ -95,7 +95,7 @@ rule merge_blast_chunks:
     input:
         chunks=get_blast_chunk_outputs
     output:
-        blast="{sample}.blast.txt"
+        blast="{sample}/{sample}.blast.txt"
     log:
         "logs/{sample}.merge_blast_chunks.log"
     run:

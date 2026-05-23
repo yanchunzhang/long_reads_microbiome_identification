@@ -1,9 +1,9 @@
 rule kraken_process_suppl:
     input:
-        "{sample}.suppl.krakenuniq"
+        "{sample}/{sample}.suppl.krakenuniq"
     output:
-        fasta="{sample}.suppl.krakenuniq.microbiome.fasta",
-        info="{sample}.suppl.krakenuniq.info_collection.flt"
+        fasta="{sample}/{sample}.suppl.krakenuniq.microbiome.fasta",
+        info="{sample}/{sample}.suppl.krakenuniq.info_collection.flt"
     threads: 1
     resources:
         mem_mb=8000
@@ -12,5 +12,5 @@ rule kraken_process_suppl:
     shell:
         """
         sh {config[scriptsdir]}/post_kraken_filter.sh \
-        {wildcards.sample}.suppl {config[kraken_db_suppl]} > {log} 2>&1
+        {wildcards.sample}/{wildcards.sample}.suppl {config[kraken_db_suppl]} > {log} 2>&1
         """

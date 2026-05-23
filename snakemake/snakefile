@@ -3,6 +3,9 @@ configfile: "config.yaml"
 import glob
 import os
 
+# Activate conda environment on every compute node before running shell commands
+shell.prefix("module load anaconda3 seqkit && export PATH=/hpc/users/zhangy40/bin:/hpc/users/zhangy40/schzrnas/softwares/conda/env/myenv/bin:$PATH && ")
+
 os.makedirs("logs", exist_ok=True)
 
 # Resolve use_suppl_db robustly — handles bool (from config.yaml) and
@@ -12,16 +15,22 @@ USE_SUPPL_DB = str(config.get("use_suppl_db", True)).lower() != "false"
 if config.get("samples"):
     SAMPLES = config["samples"]
 else:
-    SAMPLES = sorted([
-        os.path.basename(x).replace(".bam", "")
-        for x in glob.glob("*.bam")
-        if "unmapp" not in x and "mm2" not in x
+    # Discover samples from per-sample subdirs (BAM or unmapped FASTA inside subdir)
+    bam_samples = sorted([
+        os.path.basename(os.path.dirname(x))
+        for x in glob.glob("*/*.bam")
+        if "unmapp" not in os.path.basename(x) and "mm2" not in os.path.basename(x)
     ])
+    fasta_samples = sorted([
+        os.path.basename(os.path.dirname(x))
+        for x in glob.glob("*/*.after_t2t.unmapped.fasta.gz")
+    ])
+    SAMPLES = bam_samples if bam_samples else fasta_samples
 
 rule all:
     input:
-        expand("{sample}.median_l_adj.txt", sample=SAMPLES),
-        expand("{sample}.microbiome.sum_by_length_per_genus.txt", sample=SAMPLES)
+        expand("{sample}/{sample}.median_l_adj.txt", sample=SAMPLES),
+        expand("{sample}/{sample}.microbiome.sum_by_length_per_genus.txt", sample=SAMPLES)
 
 include: "rules/unmapped.smk"
 include: "rules/samtools_stats.smk"

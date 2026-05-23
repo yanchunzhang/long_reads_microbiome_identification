@@ -1,12 +1,12 @@
 rule merge_kraken:
     input:
-        primary_fasta="{sample}.krakenuniq.microbiome.fasta",
-        suppl_fasta="{sample}.suppl.krakenuniq.microbiome.fasta",
-        primary_info="{sample}.krakenuniq.info_collection.flt",
-        suppl_info="{sample}.suppl.krakenuniq.info_collection.flt"
+        primary_fasta="{sample}/{sample}.krakenuniq.microbiome.fasta",
+        suppl_fasta="{sample}/{sample}.suppl.krakenuniq.microbiome.fasta",
+        primary_info="{sample}/{sample}.krakenuniq.info_collection.flt",
+        suppl_info="{sample}/{sample}.suppl.krakenuniq.info_collection.flt"
     output:
-        fasta="{sample}.merged.krakenuniq.microbiome.fasta",
-        info="{sample}.merged.krakenuniq.info_collection.flt"
+        fasta="{sample}/{sample}.merged.krakenuniq.microbiome.fasta",
+        info="{sample}/{sample}.merged.krakenuniq.info_collection.flt"
     log:
         "logs/{sample}.merge_kraken.log"
     shell:

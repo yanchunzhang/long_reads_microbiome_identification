@@ -61,7 +61,8 @@ process ANNOTATE_BLAST_LENGTHS {
     sed 's/ /_/g' | \\
     sort -k7,7 -k3,3 > ${sample}.blast.processed.add_length.txt
 
-    awk '\$6>0.5 && !/k__unclass/ && !/g__unclass/ && !/k__Euka/ && /k__/' \\
+    awk '\$6>0.5 && !/k__unclass/ && !/g__unclass/ && /k__/ && \\
+         (!/k__Euka/ || /(p__Ascomycota|p__Basidiomycota|p__Mucoromycota|p__Chytridiomycota)/)' \\
         ${sample}.blast.processed.add_length.txt > ${sample}.blast.microbiome.txt
     """
 }

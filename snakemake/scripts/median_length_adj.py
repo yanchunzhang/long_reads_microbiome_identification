@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import argparse
+import gzip
 import os
 import pandas as pd
 
@@ -9,7 +10,8 @@ def human_median_from_stats(stats_file):
     lengths = []
     counts = []
 
-    with open(stats_file) as f:
+    opener = gzip.open if stats_file.endswith(".gz") else open
+    with opener(stats_file, "rt") as f:
         for line in f:
             if not line.startswith("RL"):
                 continue

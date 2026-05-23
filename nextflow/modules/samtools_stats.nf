@@ -11,14 +11,14 @@ process MAPPED_HUMAN_STATS {
     tuple val(sample), path(bam)
 
     output:
-    tuple val(sample), path("${sample}.bam.mapped_human_reads_only.stats.txt")
+    tuple val(sample), path("${sample}.bam.mapped_human_reads_only.stats.txt.gz")
 
     script:
     """
     set -euo pipefail
 
-    sh ${params.scriptsdir}/samtools_stats.mapped_human_reads_only.sh \\
-        ${bam} \\
-        ${task.cpus}
+    samtools view -@ ${task.cpus} ${bam} -h -F4 | \\
+        samtools stats | \\
+        gzip > ${sample}.bam.mapped_human_reads_only.stats.txt.gz
     """
 }
