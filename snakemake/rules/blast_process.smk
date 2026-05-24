@@ -41,6 +41,7 @@ rule annotate_blast_lengths:
         sort -k7,7 -k3,3 > {output.add_length} 2> {log}
 
         awk '$6>0.5 && !/k__unclass/ && !/g__unclass/ && /k__/ && \
+             !/k__Metazoa/ && \
              (!/k__Euka/ || /(p__Ascomycota|p__Basidiomycota|p__Mucoromycota|p__Chytridiomycota)/)' \
           {output.add_length} > {output.other_microbiome} 2>> {log}
         """
