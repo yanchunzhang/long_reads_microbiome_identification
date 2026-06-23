@@ -12,8 +12,9 @@ rule mapped_human_stats:
     shell:
         r"""
         set -euo pipefail
+        module load samtools/1.21
 
         samtools view -@ {threads} {input.bam} -h -F4 | \
-          samtools stats | \
-          gzip > {output.stats} 2> {log}
+          samtools stats 2> {log} | \
+          gzip > {output.stats}
         """

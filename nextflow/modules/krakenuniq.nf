@@ -11,7 +11,10 @@ process KRAKENUNIQ {
     tuple val(sample), path(fasta)
 
     output:
-    tuple val(sample), path("${sample}.krakenuniq"), path("${sample}.classified_by_krakenuniq")
+    tuple val(sample),
+          path("${sample}.krakenuniq"),
+          path("${sample}.classified_by_krakenuniq"),
+          path("${sample}.krakenuniq.report")
 
     script:
     """

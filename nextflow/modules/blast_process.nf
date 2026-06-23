@@ -57,11 +57,14 @@ process ANNOTATE_BLAST_LENGTHS {
         ${info} ${processed} | \\
     awk '{print \$0, \$4/\$5}' | \\
     sed 's/ /\\t/g' | \\
-    taxonkit reformat -I 3 -F -P | \\
+    taxonkit lca -i 3 -s ';' -U -D | \\
+    taxonkit reformat -I 7 -F -P | \\
+    awk 'BEGIN {FS=OFS="\\t"} {lineage=\$8; \$7=lineage; NF=7; print}' | \\
     sed 's/ /_/g' | \\
     sort -k7,7 -k3,3 > ${sample}.blast.processed.add_length.txt
 
     awk '\$6>0.5 && !/k__unclass/ && !/g__unclass/ && /k__/ && \\
+         !/k__Metazoa/ && \\
          (!/k__Euka/ || /(p__Ascomycota|p__Basidiomycota|p__Mucoromycota|p__Chytridiomycota)/)' \\
         ${sample}.blast.processed.add_length.txt > ${sample}.blast.microbiome.txt
     """

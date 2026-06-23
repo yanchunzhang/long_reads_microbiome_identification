@@ -152,6 +152,9 @@ nextflow run main.nf -profile lsf --bam_dir /path/to/bams -resume
 |---|---|---|
 | `--bam_dir` | Directory containing input BAM files | `.` |
 | `--samples` | Comma-separated sample list | auto-discover `*.bam` |
+| `--resume_from_fasta` | Start from existing per-sample `*.after_t2t.unmapped.fasta.gz` and mapped-human stats files | `false` |
+| `--fasta_dir` | Directory containing `SAMPLE/SAMPLE.after_t2t.unmapped.fasta.gz` for FASTA-resume mode | `.` |
+| `--stats_dir` | Directory containing `SAMPLE/SAMPLE.bam.mapped_human_reads_only.stats.txt.gz` for FASTA-resume mode | `.` |
 | `--kraken_db` | Path to primary KrakenUniq database | required |
 | `--kraken_db_suppl` | Path to supplemental KrakenUniq database | required if `use_suppl_db=true` |
 | `--use_suppl_db` | Run supplemental DB and merge results | `true` |
@@ -164,6 +167,16 @@ nextflow run main.nf -profile lsf --bam_dir /path/to/bams -resume
 To skip the supplemental DB:
 ```bash
 nextflow run main.nf -profile lsf --use_suppl_db false ...
+```
+
+To resume from existing unmapped FASTA files:
+```bash
+nextflow run main.nf -profile lsf \
+    --resume_from_fasta true \
+    --fasta_dir /path/to/sample_dirs \
+    --stats_dir /path/to/sample_dirs \
+    --outdir results \
+    -resume
 ```
 
 ---

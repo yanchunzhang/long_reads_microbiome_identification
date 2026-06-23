@@ -8,11 +8,12 @@ process KRAKEN_PROCESS_SUPPL {
     publishDir "${params.outdir}/${sample}", mode: 'copy'
 
     input:
-    tuple val(sample), path(krakenuniq), path(classified)
+    tuple val(sample), path(krakenuniq), path(classified), path(report)
 
     output:
     tuple val(sample), path("${sample}.suppl.krakenuniq.microbiome.fasta"), emit: fasta
     tuple val(sample), path("${sample}.suppl.krakenuniq.info_collection.flt"),  emit: info
+    tuple val(sample), path("${sample}.suppl.krakenuniq.info_collection"),      emit: info_all
 
     script:
     """

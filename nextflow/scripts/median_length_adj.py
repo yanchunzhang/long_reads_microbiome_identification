@@ -21,16 +21,11 @@ def human_median_from_stats(stats_file):
             lengths.append(float(parts[1]))
             counts.append(int(parts[2]))
 
-    if not lengths:
-        return None
-
     df = pd.DataFrame({"length": lengths, "count": counts}).sort_values("length")
     df["cum"] = df["count"].cumsum()
     total = df["count"].sum()
 
-    if total == 0:
-        return None
-    elif total % 2:
+    if total % 2:
         target = (total + 1) // 2
         return df.loc[df["cum"] >= target, "length"].iloc[0]
     else:
@@ -62,7 +57,7 @@ def main():
 
     human_median = human_median_from_stats(args.stats)
 
-    if human_median is None or (not os.path.exists(args.microbe)) or os.path.getsize(args.microbe) == 0:
+    if (not os.path.exists(args.microbe)) or os.path.getsize(args.microbe) == 0:
         open(args.sum_out, "w").close()
         open(args.gt5_out, "w").close()
         return

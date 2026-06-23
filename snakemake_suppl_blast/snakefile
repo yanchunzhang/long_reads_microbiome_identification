@@ -1,0 +1,46 @@
+configfile: "config.yaml"
+
+import glob
+import os
+
+# Activate conda environment on every compute node before running shell commands
+shell.prefix("module load anaconda3 seqkit && export PATH=/hpc/users/zhangy40/bin:/hpc/users/zhangy40/schzrnas/softwares/conda/env/myenv/bin:$PATH && ")
+
+os.makedirs("logs", exist_ok=True)
+
+# Resolve use_suppl_db robustly — handles bool (from config.yaml) and
+# string "false" (from --config use_suppl_db=false on the CLI).
+USE_SUPPL_DB = str(config.get("use_suppl_db", True)).lower() != "false"
+
+if config.get("samples"):
+    SAMPLES = config["samples"]
+else:
+    # Try BAM discovery first; fall back to pre-made unmapped FASTAs
+    bam_samples = sorted([
+        os.path.basename(x).replace(".bam", "")
+        for x in glob.glob("*.bam")
+        if "unmapp" not in x and "mm2" not in x
+    ])
+    fasta_samples = sorted([
+        os.path.basename(x).replace(".after_t2t.unmapped.fasta.gz", "")
+        for x in glob.glob("*.after_t2t.unmapped.fasta.gz")
+    ])
+    SAMPLES = bam_samples if bam_samples else fasta_samples
+
+rule all:
+    input:
+        expand("{sample}/{sample}.median_l_adj.txt", sample=SAMPLES),
+        expand("{sample}/{sample}.microbiome.sum_by_length_per_genus.txt", sample=SAMPLES),
+        expand("{sample}/{sample}.virus_fungi.median_l_adj.txt", sample=SAMPLES),
+        expand("{sample}/{sample}.virus_fungi.sum_by_length_per_genus.txt", sample=SAMPLES)
+
+include: "rules/unmapped.smk"
+include: "rules/samtools_stats.smk"
+include: "rules/krakenuniq.smk"
+include: "rules/krakenuniq_suppl.smk"
+include: "rules/kraken_process.smk"
+include: "rules/kraken_process_suppl.smk"
+include: "rules/merge_kraken.smk"
+include: "rules/blast.smk"
+include: "rules/blast_process.smk"
+include: "rules/median_length_adj.smk"

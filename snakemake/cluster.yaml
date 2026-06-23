@@ -2,47 +2,59 @@ __default__:
   queue: premium
   time: "6:00"
   mem_mb: 8000
-  extra: ""
+  extra: "-R 'rusage[mem=8000] span[hosts=1]'"
   log: "log/{rule}.{wildcards}.%J.log"
 
 unmapped_analysis:
   queue: premium
   time: "4:00"
   mem_mb: 12000
-  extra: ""
+  extra: "-R 'rusage[mem=12000] span[hosts=1]'"
 
 mapped_human_stats:
   queue: premium
   time: "6:00"
   mem_mb: 6000
-  extra: ""
+  extra: "-R 'rusage[mem=6000] span[hosts=1]'"
 
 krakenuniq:
   queue: premium
-  time: "2:00"
+  time: "4:00"
   mem_mb: 180000
-  extra: "-R himem"
+  extra: "-R 'select[himem] rusage[mem=180000] span[hosts=1]'"
 
 krakenuniq_suppl:
   queue: premium
-  time: "2:00"
+  time: "4:00"
   mem_mb: 60000
-  extra: "-R himem"
+  extra: "-R 'select[himem] rusage[mem=60000] span[hosts=1]'"
+
+kraken_process:
+  queue: premium
+  time: "1:00"
+  mem_mb: 8000
+  extra: "-R 'rusage[mem=8000] span[hosts=1]'"
+
+kraken_process_suppl:
+  queue: premium
+  time: "1:00"
+  mem_mb: 8000
+  extra: "-R 'rusage[mem=8000] span[hosts=1]'"
 
 megablast_chunk:
   queue: premium
-  time: "6:00"
+  time: "12:00"
   mem_mb: 30000
-  extra: "-R himem"
+  extra: "-R 'select[himem] rusage[mem=30000] span[hosts=1]'"
 
 process_blast:
   queue: express
-  time: "2:00"
+  time: "6:00"
   mem_mb: 30000
-  extra: ""
+  extra: "-R 'rusage[mem=30000] span[hosts=1]'"
 
 median_length_adj:
   queue: premium
   time: "2:00"
   mem_mb: 8000
-  extra: ""
+  extra: "-R 'rusage[mem=8000] span[hosts=1]'"

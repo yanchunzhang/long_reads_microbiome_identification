@@ -12,11 +12,12 @@ process KRAKEN_PROCESS {
     publishDir "${params.outdir}/${sample}", mode: 'copy'
 
     input:
-    tuple val(sample), path(krakenuniq), path(classified)
+    tuple val(sample), path(krakenuniq), path(classified), path(report)
 
     output:
     tuple val(sample), path("${sample}.krakenuniq.microbiome.fasta"), emit: fasta
     tuple val(sample), path("${sample}.krakenuniq.info_collection.flt"),  emit: info
+    tuple val(sample), path("${sample}.krakenuniq.info_collection"),      emit: info_all
 
     script:
     // The upstream shell script operates on files named by sample prefix
