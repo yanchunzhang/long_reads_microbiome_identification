@@ -52,10 +52,14 @@ def main():
     parser.add_argument("--microbe", required=True)
     parser.add_argument("--sum_out", required=True)
     parser.add_argument("--gt5_out", required=True)
+    parser.add_argument("--human_median_out", required=True)
     parser.add_argument("--sample", required=True)
     args = parser.parse_args()
 
     human_median = human_median_from_stats(args.stats)
+    with open(args.human_median_out, "w") as out:
+        out.write("sample\thuman_median_length_bp\n")
+        out.write(f"{args.sample}\t{human_median:g}\n")
 
     if (not os.path.exists(args.microbe)) or os.path.getsize(args.microbe) == 0:
         open(args.sum_out, "w").close()

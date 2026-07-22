@@ -16,7 +16,8 @@ process MEDIAN_LENGTH_ADJ {
     output:
     tuple val(sample),
           path("${sample}.median_l_adj.txt"),
-          path("${sample}.microbiome.sum_by_length_per_genus.txt")
+          path("${sample}.microbiome.sum_by_length_per_genus.txt"),
+          path("${sample}.human_median_length.tsv")
 
     script:
     """
@@ -25,6 +26,7 @@ process MEDIAN_LENGTH_ADJ {
         --microbe ${microbe} \\
         --sum_out ${sample}.microbiome.sum_by_length_per_genus.txt \\
         --gt5_out ${sample}.median_l_adj.txt \\
+        --human_median_out ${sample}.human_median_length.tsv \\
         --sample  ${sample}
     """
 }
