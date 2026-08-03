@@ -12,6 +12,11 @@ def parse_arguments():
     )
     parser.add_argument("--input", required=True, help="Input BLAST result file")
     parser.add_argument("--output", required=True, help="Output summary file")
+    parser.add_argument(
+        "--audit-output",
+        help=("Optional headered table of equivalent top targets. The legacy "
+              "four-column --output remains unchanged.")
+    )
     parser.add_argument("--threads", type=int, default=1, help="Number of worker processes")
     parser.add_argument(
         "--batch-reads",
@@ -70,18 +75,21 @@ def choose_best_target(read_hits):
     min_score = min(h["score"] for h in read_hits)
     df_best = [h for h in read_hits if h["score"] == min_score]
 
+    target_to_intervals = defaultdict(list)
+    target_to_taxa = defaultdict(list)
+    for h in df_best:
+        target_to_intervals[h["target"]].append((h["qstart"], h["qend"]))
+        if h["taxon"] not in target_to_taxa[h["target"]]:
+            target_to_taxa[h["target"]].append(h["taxon"])
+
+    target_lengths = {
+        target: merge_intervals(intervals)
+        for target, intervals in target_to_intervals.items()
+    }
+    max_len = max(target_lengths.values())
+    best_targets = [t for t in target_to_intervals if target_lengths[t] == max_len]
+
     if len({h["target"] for h in df_best}) > 1:
-        target_to_intervals = defaultdict(list)
-        for h in df_best:
-            target_to_intervals[h["target"]].append((h["qstart"], h["qend"]))
-
-        target_lengths = {
-            target: merge_intervals(intervals)
-            for target, intervals in target_to_intervals.items()
-        }
-
-        max_len = max(target_lengths.values())
-        best_targets = [t for t, l in target_lengths.items() if l == max_len]
 
         if len(best_targets) > 1:
             if best_target_name not in best_targets:
@@ -105,7 +113,23 @@ def choose_best_target(read_hits):
     ]
     hit_len_combine = merge_intervals(hit_ranges)
 
-    return [read_hits[0]["read_id"], best_target_name, best_target_taxon, hit_len_combine]
+    equivalent_taxa = []
+    for target in best_targets:
+        for taxon_field in target_to_taxa[target]:
+            for taxon in taxon_field.split(";"):
+                if taxon and taxon not in equivalent_taxa:
+                    equivalent_taxa.append(taxon)
+
+    legacy = [read_hits[0]["read_id"], best_target_name,
+              best_target_taxon, hit_len_combine]
+    audit = legacy + [
+        len(best_targets),
+        ";".join(best_targets),
+        ";".join(equivalent_taxa),
+        len(equivalent_taxa),
+        "yes" if len(equivalent_taxa) > 1 else "no",
+    ]
+    return legacy, audit
 
 
 def read_groups(blast_file):
@@ -148,11 +172,23 @@ def process_batch(batch):
 def main():
     args = parse_arguments()
 
-    with open(args.output, "w") as out:
+    audit_header = [
+        "read_id", "representative_target", "representative_taxids",
+        "representative_query_covered_bp", "equivalent_target_count",
+        "equivalent_targets", "equivalent_taxids", "equivalent_taxid_count",
+        "multiple_equivalent_taxids",
+    ]
+
+    with open(args.output, "w") as out, \
+            (open(args.audit_output, "w") if args.audit_output else open("/dev/null", "w")) as audit_out:
+        if args.audit_output:
+            audit_out.write("\t".join(audit_header) + "\n")
         if args.threads <= 1:
             for read_hits in read_groups(args.input):
-                result = choose_best_target(read_hits)
-                out.write("\t".join(map(str, result)) + "\n")
+                legacy, audit = choose_best_target(read_hits)
+                out.write("\t".join(map(str, legacy)) + "\n")
+                if args.audit_output:
+                    audit_out.write("\t".join(map(str, audit)) + "\n")
         else:
             with ProcessPoolExecutor(max_workers=args.threads) as ex:
                 for results in ex.map(
@@ -160,8 +196,10 @@ def main():
                     chunked(read_groups(args.input), args.batch_reads),
                     chunksize=1
                 ):
-                    for result in results:
-                        out.write("\t".join(map(str, result)) + "\n")
+                    for legacy, audit in results:
+                        out.write("\t".join(map(str, legacy)) + "\n")
+                        if args.audit_output:
+                            audit_out.write("\t".join(map(str, audit)) + "\n")
 
 
 if __name__ == "__main__":

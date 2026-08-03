@@ -139,7 +139,7 @@ workflow {
 
     // Step 6: Annotate BLAST hits with KrakenUniq length/taxonomy info
     ch_annotate = ch_annotate_info
-        .join(PROCESS_BLAST.out)
+        .join(PROCESS_BLAST.out.processed)
 
     ANNOTATE_BLAST_LENGTHS(ch_annotate)
 
