@@ -27,6 +27,11 @@
 #   -A, --account ACC     LSF project/account   (default: $LSF_ACCOUNT or acc_schzrnas)
 #                         Members of another lab MUST set this, e.g. acc_fangg03a,
 #                         or LSF rejects the job at submission.
+#   -l, --local           run on this machine instead of submitting to a
+#                         scheduler (use --cores N via --extra). Needed off-LSF.
+#       --cluster-cmd C   submit command template, overriding the LSF default.
+#                         Also settable as $SNAKEMAKE_CLUSTER_CMD. SLURM e.g.:
+#                           'sbatch -p {cluster.queue} -c {threads} -t {cluster.time}'
 #   -n, --dry-run         snakemake -n (print DAG, submit nothing)
 #   -u, --unlock          snakemake --unlock then exit
 #       --extra "ARGS"    extra args passed verbatim to snakemake
@@ -89,6 +94,8 @@ HOST_REF=""
 DRYRUN=""
 UNLOCK=0
 EXTRA=""
+LOCAL=0
+CLUSTER_CMD_OVERRIDE="${SNAKEMAKE_CLUSTER_CMD:-}"
 
 # --- parse args ------------------------------------------------------------
 RUNDIR="${1:-}"
@@ -102,6 +109,8 @@ while [[ $# -gt 0 ]]; do
         -r|--host-ref) HOST_REF="$2"; shift 2 ;;
         -j|--jobs)     JOBS="$2"; shift 2 ;;
         -A|--account)  ACCOUNT="$2"; shift 2 ;;
+        -l|--local)    LOCAL=1; shift ;;
+        --cluster-cmd) CLUSTER_CMD_OVERRIDE="$2"; shift 2 ;;
         -n|--dry-run)  DRYRUN="-n"; shift ;;
         -u|--unlock)   UNLOCK=1; shift ;;
         --extra)       EXTRA="$2"; shift 2 ;;
@@ -131,13 +140,27 @@ CONFIG_OVERRIDES=("scriptsdir=$REPO_SMK_DIR/scripts")
 [[ -n "$HOST_REF" ]] && CONFIG_OVERRIDES+=("t2t_ref=$HOST_REF")
 
 # --- LSF submission command (placeholders filled per-rule from cluster.yaml) -
-CLUSTER_CMD="bsub -P $ACCOUNT -q {cluster.queue} -n {threads} -W {cluster.time} {cluster.extra} -o {cluster.log} -e {cluster.log}"
+# Default submit command is LSF (Minerva). Override with --cluster-cmd or
+# $SNAKEMAKE_CLUSTER_CMD for another scheduler, or use --local for no scheduler.
+# NOTE: written as an if/else, NOT ${VAR:-default}. The template contains {...}
+# placeholders and parameter expansion ends at the first `}`, which silently
+# mangles the command into `-q {cluster.queue -n {threads} ...}`.
+if [[ -n "$CLUSTER_CMD_OVERRIDE" ]]; then
+    CLUSTER_CMD="$CLUSTER_CMD_OVERRIDE"
+else
+    CLUSTER_CMD="bsub -P $ACCOUNT -q {cluster.queue} -n {threads} -W {cluster.time} {cluster.extra} -o {cluster.log} -e {cluster.log}"
+fi
 
 echo "=========================================================="
 echo " run dir   : $RUNDIR"
 echo " snakefile : $SNAKEFILE"
 echo " config    : $CONFIGFILE"
-echo " cluster   : $CLUSTERYAML  (account=$ACCOUNT)"
+if [[ "$LOCAL" -eq 1 ]]; then
+    echo " execution : LOCAL (no scheduler; pass --extra \"--cores N\")"
+else
+    echo " cluster   : $CLUSTERYAML  (account=$ACCOUNT)"
+    echo " submit    : $CLUSTER_CMD"
+fi
 echo " host ref  : ${HOST_REF:-<config default: CHM13 T2T>}"
 echo " jobs      : $JOBS   dry-run: ${DRYRUN:-no}"
 echo "=========================================================="
@@ -152,14 +175,19 @@ fi
 # --- launch ----------------------------------------------------------------
 # NOTE: run this from a persistent session (tmux/screen) or submit the launcher
 # itself as a small long-walltime LSF job, since it stays alive managing the DAG.
+SCHED_ARGS=(--cluster-config "$CLUSTERYAML" --cluster "$CLUSTER_CMD" --jobs "$JOBS")
+if [[ "$LOCAL" -eq 1 ]]; then
+    # No scheduler: let snakemake run rules on this machine. Pass --cores via
+    # --extra to control parallelism, e.g. --extra "--cores 8".
+    SCHED_ARGS=()
+fi
+
 snakemake \
     --snakefile "$SNAKEFILE" \
     --configfile "$CONFIGFILE" \
     --directory "$RUNDIR" \
     ${CONFIG_OVERRIDES:+--config "${CONFIG_OVERRIDES[@]}"} \
-    --cluster-config "$CLUSTERYAML" \
-    --cluster "$CLUSTER_CMD" \
-    --jobs "$JOBS" \
+    ${SCHED_ARGS[@]+"${SCHED_ARGS[@]}"} \
     --rerun-incomplete \
     --latency-wait 60 \
     --keep-going \

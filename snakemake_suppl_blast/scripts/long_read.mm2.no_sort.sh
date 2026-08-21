@@ -1,6 +1,10 @@
+#!/usr/bin/env bash
 #long_read.mm2.no_sort.sh
-module load samtools/1.21
-module load minimap2
+
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)/lib/hpc_modules.sh"
+load_tool samtools samtools/1.21
+load_tool minimap2 minimap2
+require_tools samtools minimap2
 
 fq=$1
 ref=$2

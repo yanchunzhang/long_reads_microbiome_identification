@@ -12,7 +12,9 @@ rule mapped_human_stats:
     shell:
         r"""
         set -euo pipefail
-        module load samtools/1.21
+        source {config[scriptsdir]}/../../lib/hpc_modules.sh
+        load_tool samtools samtools/1.21
+        require_tools samtools
 
         samtools view -@ {threads} {input.bam} -h -F4 | \
           samtools stats 2> {log} | \

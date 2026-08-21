@@ -1,0 +1,62 @@
+# Configuration template for sites other than Mount Sinai Minerva.
+#
+#   cp config.template.yaml config.mysite.yaml
+#   # fill in the paths below
+#   bash run_snakemake.sh <run_dir> --extra "--configfile $PWD/config.mysite.yaml"
+#
+# Every path marked REQUIRED must be set. The pipeline validates them at startup
+# and reports all missing ones at once, rather than failing inside a queued job.
+
+samples: []          # leave empty to auto-discover <sample>/<sample>.bam in the run dir
+scriptsdir: "scripts"
+
+# ── REQUIRED: databases and references ───────────────────────────────────────
+# KrakenUniq microbial DB. Published results used MicrobialDB (2023-08-08) from
+# https://benlangmead.github.io/aws-indexes/k2
+kraken_db: ""
+
+# Supplemental viral+fungal KrakenUniq DB. Build with db/build_supplemental_db_v2.sh
+# Set use_suppl_db: false to skip this branch entirely.
+kraken_db_suppl: ""
+use_suppl_db: true
+
+# NCBI nt BLAST database (the `nt` prefix, not a directory).
+# Published results used the 2024-08-31 release. RESULTS DEPEND ON THIS VERSION:
+# nt grows and its taxonomy changes, so a newer download will not reproduce the
+# paper's numbers exactly. Record whichever version you use.
+blastdb: ""
+
+# NCBI taxdump directory for taxonkit (nodes.dmp, names.dmp, merged.dmp, delnodes.dmp)
+# from https://ftp.ncbi.nih.gov/pub/taxonomy/taxdump.tar.gz
+taxonkit_data_dir: ""
+
+# minimap2 index (.mmi) for the second host-depletion pass.
+# Human: T2T CHM13v2.0. Mouse: GRCm39 (or pass -r on the command line).
+t2t_ref: ""
+
+# ── Scheduler ────────────────────────────────────────────────────────────────
+lsf:
+  project: ""              # LSF billing account; ignored off LSF
+  queue_default: "premium"
+  queue_express: "express"
+
+# ── Resources ────────────────────────────────────────────────────────────────
+# NOTE: krakenuniq loads the whole database into RAM. 180 GB is for MicrobialDB;
+# lower it only if your database is smaller.
+threads:
+  unmapped_analysis: 10
+  samtools_stats: 10
+  krakenuniq: 2
+  megablast: 16
+  median_length_adj: 1
+
+resources:
+  unmapped_analysis_mem_mb: 12000
+  samtools_stats_mem_mb: 6000
+  krakenuniq_mem_mb: 180000
+  megablast_mem_mb: 30000
+  blast_process_mem_mb: 30000
+  median_length_adj_mem_mb: 8000
+
+batch:
+  blast_chunk_size: 10000

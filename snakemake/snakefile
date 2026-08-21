@@ -29,10 +29,53 @@ TOOLS_DIR = _resolve_site_path("PIPELINE_TOOLS", [
 
 # Activate conda environment on every compute node before running shell commands.
 # Load anaconda3 BEFORE the PATH export so miniforge3 cannot override myenv.
+# `|| true` matters: on a system without Lmod (container, laptop, non-Minerva
+# cluster) `module` does not exist, and an unguarded `&&` chain would fail every
+# single rule. Where the modules are absent we simply rely on PATH.
+# NOTE: no braces here — Snakemake runs .format() over shell commands, so a
+# `{ ...; }` group would be parsed as a format field. `a || true && b` is
+# left-associative in bash, i.e. `(a || true) && b`, which is what we want.
 shell.prefix(
-    "module load anaconda3 seqkit && "
+    "module load anaconda3 seqkit >/dev/null 2>&1 || true && "
     f"export PATH={ENV_BIN}:{TOOLS_DIR}:$PATH && "
 )
+
+# ── Validate required config up front ─────────────────────────────────────
+# Report every missing/unreadable path at once, before any job is submitted.
+# Without this an unset database surfaces as a "file not found" inside a job
+# that has already waited in the queue.
+def _validate_config():
+    required = [
+        ("kraken_db",         "KrakenUniq primary database directory"),
+        ("blastdb",           "NCBI nt BLAST database prefix"),
+        ("taxonkit_data_dir", "NCBI taxdump directory for taxonkit"),
+        ("t2t_ref",           "minimap2 .mmi for the 2nd host-depletion pass"),
+    ]
+    if str(config.get("use_suppl_db", True)).lower() != "false":
+        required.append(("kraken_db_suppl", "supplemental viral+fungal KrakenUniq DB"))
+
+    problems = []
+    for key, desc in required:
+        val = config.get(key)
+        if not val:
+            problems.append(f"  {key}: not set — {desc}")
+            continue
+        # blastdb is a prefix (nt -> nt.00.nin, ...), not a path that exists
+        probe = os.path.dirname(val) if key == "blastdb" else val
+        if not os.access(probe, os.R_OK):
+            problems.append(f"  {key}: not readable — {val}")
+
+    if problems:
+        raise WorkflowError(
+            "Pipeline configuration is incomplete:\n"
+            + "\n".join(problems)
+            + "\n\nStart from snakemake/config.template.yaml and pass your copy with"
+              "\n  --configfile /path/to/your.yaml"
+              "\nIf the paths ARE set, you may simply lack read permission; run"
+              "\n  bash check_env.sh"
+        )
+
+_validate_config()
 
 os.makedirs("logs", exist_ok=True)
 

@@ -9,7 +9,9 @@
 #BSUB -o logs/create_test_bam.out
 #BSUB -e logs/create_test_bam.err
 
-module load samtools/1.21
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/lib/hpc_modules.sh"
+load_tool samtools samtools/1.21
+require_tools samtools
 
 BAM=/sc/arion/projects/schzrnas/zhangy40/intratumor_bacteria/snakemake/CO4_T1.bam
 MICROBIOME=/sc/arion/projects/schzrnas/zhangy40/intratumor_bacteria/snakemake/CO4_T1.blast.microbiome.txt

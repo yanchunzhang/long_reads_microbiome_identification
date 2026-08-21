@@ -1,9 +1,13 @@
+#!/usr/bin/env bash
 #unmapped_analysis.sh; including steps of get_unmapped reads from input bam file; 2nd round of mapping to t2t ref; get unmapped reads from t2t mapping result bam file.
-module load samtools/1.21
-module load minimap2
-
 #samtools version
 #1st round of getting unmapped reads into an unmapped.bam
+
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)/lib/hpc_modules.sh"
+load_tool samtools samtools/1.21
+load_tool minimap2 minimap2
+require_tools samtools minimap2
+
 sample=$1
 input_bam=$2
 thread=$3

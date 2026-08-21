@@ -5,6 +5,10 @@ This document exists because the pipeline was developed under one account
 directory, which is mode `0700` and disappears when the account is
 deprovisioned. Those paths have been repointed; this is what remains to know.
 
+**Outside Mount Sinai entirely?** This document is about the Sinai handover.
+See the "Running outside Mount Sinai" section of [README.md](README.md) for
+scheduler profiles, the config template, and tool installation.
+
 ---
 
 ## 1. The two things you need access to

@@ -55,6 +55,48 @@ BAM (long-read, aligned to human reference)
 
 Both implementations produce identical outputs.
 
+## Running outside Mount Sinai
+
+The pipeline was developed on an LSF cluster with environment modules, but
+neither is required.
+
+**Tools.** Every `module load` is now conditional: if the tool is already on
+`PATH` (container, conda env, system install) nothing is loaded, and if no
+module system exists the call is skipped. A missing tool is reported by name
+before any work starts, rather than failing mid-pipeline. Provide the tools any
+way you like — see `nextflow/environment.yml`, or `env/myenv.explicit.lock.txt`
+for the exact package set used in the paper.
+
+**Scheduler.** Resource requests are declared with portable `cpus`/`memory`/`time`
+directives; scheduler-specific syntax lives only in the profiles.
+
+```bash
+# Nextflow
+nextflow run main.nf -profile lsf      # LSF (Minerva)
+nextflow run main.nf -profile slurm    # SLURM  — set SLURM_PARTITION / SLURM_ACCOUNT
+nextflow run main.nf -profile local    # single machine
+
+# Snakemake
+bash snakemake/run_snakemake.sh <run_dir>                        # LSF (default)
+bash snakemake/run_snakemake.sh <run_dir> --local --extra "--cores 8"
+bash snakemake/run_snakemake.sh <run_dir> --cluster-cmd 'sbatch -p {cluster.queue} -c {threads} -t {cluster.time}'
+```
+
+> **Changed default:** Nextflow used to submit to LSF even with no `-profile`.
+> The executor now comes from the profile, so `-profile lsf` is required on
+> Minerva; with no profile Nextflow runs locally.
+
+The SLURM profile is **untested** — no SLURM system was available to validate it.
+Treat it as a starting point and check the generated `.command.run`.
+
+**Configuration.** Copy `snakemake/config.template.yaml`, fill in the database
+paths, and pass it with `--configfile`. Required values are validated at startup
+and all missing ones are reported together.
+
+**Hardware.** KrakenUniq memory-maps the whole database: the primary MicrobialDB
+step requests **180 GB RAM**. This is the main hardware barrier to running the
+pipeline; the supplemental DB step needs 60 GB and everything else ≤30 GB.
+
 ## Requirements
 
 ### Software
@@ -259,6 +301,13 @@ Per sample:
 ```
 long_reads_microbiome_identification/
 ├── README.md
+├── HANDOVER.md                       # running this without the original account
+├── check_env.sh                      # preflight: is every DB/tool readable by you?
+├── lib/
+│   └── hpc_modules.sh                # conditional `module load` (no-op off Lmod)
+├── env/
+│   ├── myenv.explicit.lock.txt       # exact 341-package conda lock (paper env)
+│   └── myenv.full_versions.txt
 ├── db/
 │   └── build_supplemental_db_v2.sh   # build viral+fungal supplemental KrakenUniq DB
 ├── nextflow/
@@ -288,7 +337,9 @@ long_reads_microbiome_identification/
 │       └── blast_result_process.mt.py
 └── snakemake/
     ├── snakefile
-    ├── config.yaml
+    ├── config.yaml                    # Minerva paths
+    ├── config.template.yaml           # start here at any other site
+    ├── run_snakemake.sh
     ├── rules/
     │   ├── unmapped.smk
     │   ├── krakenuniq.smk
