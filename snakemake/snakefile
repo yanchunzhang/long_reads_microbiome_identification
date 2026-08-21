@@ -40,6 +40,14 @@ shell.prefix(
     f"export PATH={ENV_BIN}:{TOOLS_DIR}:$PATH && "
 )
 
+# The taxdump is the one DATABASE with a staged copy (465 MB), so it gets the
+# same fallback as the tools. The large databases (kraken, nt, CHM13) have no
+# copy and no fallback -- they require schzrnas group access.
+config["taxonkit_data_dir"] = _resolve_site_path("PIPELINE_TAXONKIT_DB", [
+    config.get("taxonkit_data_dir") or "/sc/arion/projects/fangg03a/zhangy40/long_read_microbiome/db/taxdump",
+    "/sc/arion/projects/fangg03a/zhangy40/long_read_microbiome/db/taxdump",
+])
+
 # ── Validate required config up front ─────────────────────────────────────
 # Report every missing/unreadable path at once, before any job is submitted.
 # Without this an unset database surfaces as a "file not found" inside a job
