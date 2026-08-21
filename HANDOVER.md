@@ -18,10 +18,31 @@ scheduler profiles, the config template, and tool installation.
 | **Tools** (conda env, taxonkit, taxdump, this repo) | `/sc/arion/projects/schzrnas/zhangy40/softwares/` | ~3.4 GB | **Yes** — copy staged at `/sc/arion/projects/fangg03a/zhangy40/long_read_microbiome/` |
 | **Databases** (BLAST `nt`, 2 KrakenUniq DBs, CHM13 T2T) | `/sc/arion/projects/schzrnas/zhangy40/` | **~1.2 TB** | **No** — you must be in group `schzrnas` |
 
-The databases are the binding constraint. They are far too large to duplicate,
-so **anyone running this pipeline needs membership in the `schzrnas` Unix
-group.** Request it from Minerva HPC support; the `schzrnas` allocation is owned
-by `fangg03` (the PI), so this is an in-lab approval.
+The databases are the binding constraint. **Anyone running this pipeline needs
+membership in the `schzrnas` Unix group.** Request it from Minerva HPC support;
+the `schzrnas` allocation is owned by `fangg03` (the PI), so this is an in-lab
+approval. That costs one ticket and zero bytes.
+
+### If the group request is refused
+
+Every database path is already wired to probe `schzrnas` first and fall back to
+`/sc/arion/projects/fangg03a/zhangy40/long_read_microbiome/db/`, so copying them
+there needs **no configuration change** — the pipeline picks them up. Use:
+
+```bash
+bash db/stage_databases.sh --dry-run   # check sizes and free space first
+bash db/stage_databases.sh
+```
+
+Each path can also be overridden individually: `PIPELINE_KRAKEN_DB`,
+`PIPELINE_KRAKEN_DB_SUPPL`, `PIPELINE_BLASTDB`, `PIPELINE_T2T_REF`,
+`PIPELINE_TAXONKIT_DB`.
+
+Do this only as a last resort. It is ~1.2 TB, it creates a second copy that will
+drift from the original, and `df` free space is not the same as your allocation
+quota — confirm the latter with HPC first. **Copy, never move:** the original
+paths are referenced by ~236 files across the intratumor_bacteria project (146
+for CHM13 alone) and by other members of the `schzrnas` allocation.
 
 Note that the Unix group (`schzrnas`) is a *separate thing* from the LSF billing
 account (`acc_schzrnas`). You may well have one and not the other — see §4.

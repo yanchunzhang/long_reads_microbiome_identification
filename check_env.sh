@@ -116,9 +116,35 @@ check_path() {  # label, path, [one expected file inside]
     if [[ -n "$probe" && ! -r "$p/$probe" ]]; then bad "$label: missing/unreadable $probe in $p"; return; fi
     ok "$label ($(du -sh "$p" 2>/dev/null | cut -f1))"
 }
-check_path "kraken MicrobialDB"  "$SCHZ/softwares/kuniq_microbialdb_minus_kdb.20230808" "taxDB"
-check_path "kraken suppl VF DB"  "$SCHZ/softwares/kuniq_supplemental_vf_db_v2"          "taxDB"
-check_path "CHM13 T2T index"     "$SCHZ/ref/CHM13_T2T/chm13v2.0.mmi"
+# Probe primary then fallback, exactly as the pipeline does, and say which won.
+check_db() {   # label, env-var, primary, fallback
+    local label="$1" var="$2" prim="$3" fb="$4"
+    local override="${!var:-}"
+    if [[ -n "$override" ]]; then
+        [[ -r "$override" ]] && ok "$label [\$$var override] $override" \
+                             || bad "$label: \$$var set but unreadable — $override"
+        return
+    fi
+    if [[ -r "$prim" ]]; then
+        ok "$label ($(du -sh "$prim" 2>/dev/null | cut -f1)) [schzrnas]"
+    elif [[ -r "$fb" ]]; then
+        ok "$label ($(du -sh "$fb" 2>/dev/null | cut -f1)) [fangg03a copy]"
+    else
+        bad "$label: unreadable in both locations"
+        echo "         primary : $prim" >&2
+        echo "         fallback: $fb  (not staged — see db/stage_databases.sh)" >&2
+    fi
+}
+
+check_db "kraken MicrobialDB" PIPELINE_KRAKEN_DB \
+    "$SCHZ/softwares/kuniq_microbialdb_minus_kdb.20230808" \
+    "$FANG/db/kuniq_microbialdb_minus_kdb.20230808"
+check_db "kraken suppl VF DB" PIPELINE_KRAKEN_DB_SUPPL \
+    "$SCHZ/softwares/kuniq_supplemental_vf_db_v2" \
+    "$FANG/db/kuniq_supplemental_vf_db_v2"
+check_db "CHM13 T2T index" PIPELINE_T2T_REF \
+    "$SCHZ/ref/CHM13_T2T/chm13v2.0.mmi" \
+    "$FANG/db/CHM13_T2T/chm13v2.0.mmi"
 
 TAXDUMP="$(resolve_site_path PIPELINE_TAXONKIT_DB "$SCHZ/softwares/taxdump" "$FANG/db/taxdump")"
 for f in nodes.dmp names.dmp merged.dmp delnodes.dmp; do
@@ -126,6 +152,7 @@ for f in nodes.dmp names.dmp merged.dmp delnodes.dmp; do
 done
 
 BLASTDB_DIR="$SCHZ/softwares/blast_db"
+[[ -r "$BLASTDB_DIR" ]] || BLASTDB_DIR="$FANG/db/blast_db"
 if [[ -r "$BLASTDB_DIR" ]] && compgen -G "$BLASTDB_DIR/nt.*" >/dev/null; then
     ok "BLAST nt ($(ls "$BLASTDB_DIR"/nt.*.nin 2>/dev/null | wc -l) volumes)"
     if command -v blastdbcmd >/dev/null 2>&1; then
