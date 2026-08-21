@@ -3,8 +3,36 @@ configfile: "config.yaml"
 import glob
 import os
 
-# Activate conda environment on every compute node before running shell commands
-shell.prefix("module load anaconda3 seqkit && export PATH=/hpc/users/zhangy40/bin:/hpc/users/zhangy40/schzrnas/softwares/conda/env/myenv/bin:$PATH && ")
+# ── Site path resolution ──────────────────────────────────────────────────
+# Tool locations are resolved at parse time, in this order:
+#   1. environment variable (PIPELINE_ENV_BIN / PIPELINE_TOOLS)
+#   2. first readable candidate below
+# This keeps runs reproducible for the schzrnas group while letting anyone
+# without schzrnas access point at the fangg03a copy (or their own) instead.
+def _resolve_site_path(env_var, candidates):
+    override = os.environ.get(env_var)
+    if override:
+        return override
+    for cand in candidates:
+        if os.access(cand, os.R_OK | os.X_OK):
+            return cand
+    return candidates[0]
+
+ENV_BIN = _resolve_site_path("PIPELINE_ENV_BIN", [
+    "/sc/arion/projects/schzrnas/zhangy40/softwares/conda/env/myenv/bin",
+    "/sc/arion/projects/fangg03a/long_read_microbiome/env/myenv/bin",
+])
+TOOLS_DIR = _resolve_site_path("PIPELINE_TOOLS", [
+    "/sc/arion/projects/schzrnas/zhangy40/softwares",
+    "/sc/arion/projects/fangg03a/long_read_microbiome/bin",
+])
+
+# Activate conda environment on every compute node before running shell commands.
+# Load anaconda3 BEFORE the PATH export so miniforge3 cannot override myenv.
+shell.prefix(
+    "module load anaconda3 seqkit && "
+    f"export PATH={ENV_BIN}:{TOOLS_DIR}:$PATH && "
+)
 
 os.makedirs("logs", exist_ok=True)
 

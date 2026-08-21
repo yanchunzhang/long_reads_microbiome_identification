@@ -24,7 +24,9 @@
 #                         (overrides config t2t_ref). For MOUSE data this is
 #                         GRCm39; for HUMAN data leave unset to use CHM13 T2T.
 #   -j, --jobs N          max concurrent cluster jobs        (default: 80)
-#   -A, --account ACC     LSF project/account                (default: acc_schzrnas)
+#   -A, --account ACC     LSF project/account   (default: $LSF_ACCOUNT or acc_schzrnas)
+#                         Members of another lab MUST set this, e.g. acc_fangg03a,
+#                         or LSF rejects the job at submission.
 #   -n, --dry-run         snakemake -n (print DAG, submit nothing)
 #   -u, --unlock          snakemake --unlock then exit
 #       --extra "ARGS"    extra args passed verbatim to snakemake
@@ -42,11 +44,37 @@
 ###############################################################################
 set -euo pipefail
 
+# Print the banner comment block (between the two ### rules), stripped of "# ".
+usage() {
+    awk 'NR>2 && /^#{10,}/ {exit} NR>2 {sub(/^# ?/, ""); print}' "${BASH_SOURCE[0]}"
+}
+
 # --- environment: put snakemake (and tools) on PATH ------------------------
 # The snakefile's shell.prefix only affects RULE jobs on compute nodes; the
 # launcher itself (this script) needs snakemake on PATH too.
 module load anaconda3 seqkit >/dev/null 2>&1 || true
-export PATH="/hpc/users/zhangy40/bin:/hpc/users/zhangy40/schzrnas/softwares/conda/env/myenv/bin:$PATH"
+
+# Resolve tool locations: env var wins, else first readable candidate.
+# schzrnas members get the canonical paths; everyone else falls through to the
+# fangg03a copy automatically.
+resolve_site_path() {
+    local var_name="$1"; shift
+    local override="${!var_name:-}"
+    if [[ -n "$override" ]]; then echo "$override"; return; fi
+    local c
+    for c in "$@"; do
+        if [[ -r "$c" && -x "$c" ]]; then echo "$c"; return; fi
+    done
+    echo "$1"
+}
+
+ENV_BIN="$(resolve_site_path PIPELINE_ENV_BIN \
+    /sc/arion/projects/schzrnas/zhangy40/softwares/conda/env/myenv/bin \
+    /sc/arion/projects/fangg03a/long_read_microbiome/env/myenv/bin)"
+TOOLS_DIR="$(resolve_site_path PIPELINE_TOOLS \
+    /sc/arion/projects/schzrnas/zhangy40/softwares \
+    /sc/arion/projects/fangg03a/long_read_microbiome/bin)"
+export PATH="$ENV_BIN:$TOOLS_DIR:$PATH"
 
 # --- repo locations (this script lives in <repo>/snakemake/) ---------------
 REPO_SMK_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -56,7 +84,7 @@ CLUSTERYAML="$REPO_SMK_DIR/cluster.yaml"
 
 # --- defaults --------------------------------------------------------------
 JOBS=80
-ACCOUNT="acc_schzrnas"
+ACCOUNT="${LSF_ACCOUNT:-acc_schzrnas}"
 HOST_REF=""
 DRYRUN=""
 UNLOCK=0
@@ -65,7 +93,7 @@ EXTRA=""
 # --- parse args ------------------------------------------------------------
 RUNDIR="${1:-}"
 if [[ -z "$RUNDIR" || "$RUNDIR" == "-h" || "$RUNDIR" == "--help" ]]; then
-    sed -n '2,55p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
+    usage
     exit 0
 fi
 shift
@@ -77,7 +105,7 @@ while [[ $# -gt 0 ]]; do
         -n|--dry-run)  DRYRUN="-n"; shift ;;
         -u|--unlock)   UNLOCK=1; shift ;;
         --extra)       EXTRA="$2"; shift 2 ;;
-        -h|--help)     sed -n '2,55p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 0 ;;
+        -h|--help)     usage; exit 0 ;;
         *) echo "ERROR: unknown option '$1'" >&2; exit 1 ;;
     esac
 done

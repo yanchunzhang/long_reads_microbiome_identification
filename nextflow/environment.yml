@@ -1,10 +1,30 @@
+# Environment spec for long_reads_microbiome_identification.
+#
+# IMPORTANT — these versions are transcribed from the environment that actually
+# produced the published results (`.../softwares/conda/env/myenv`), verified
+# against its conda-meta records. An earlier version of this file claimed
+# python>=3.8 / pandas=2.3.3, which NO run has ever used; pandas 2.x changed
+# groupby and median behaviour, both of which the MLA calculation depends on.
+#
+# Preferred order for reproducing a run:
+#   1. Use the shared env directly (nothing to install):
+#        export PIPELINE_ENV_BIN=<...>/myenv/bin
+#   2. Rebuild byte-for-byte from the explicit lock:
+#        conda create -p ./myenv --file ../env/myenv.explicit.lock.txt
+#   3. Solve from this file (may drift; python 3.7 is EOL and may not resolve).
+#
+# NOTE: taxonkit is NOT part of this conda env. It is a standalone static binary
+# (v0.14.1) alongside the env; see PIPELINE_TOOLS in the README.
+# samtools, minimap2, blastn and seqkit come from `module load`, not from here.
 name: longread-microbiome
 channels:
   - bioconda
   - conda-forge
   - defaults
 dependencies:
-  - python>=3.8
+  - python=3.7.12
   - krakenuniq=1.0.4
-  - taxonkit
-  - pandas=2.3.3
+  - pandas=1.3.5
+  - numpy=1.21.6
+  - snakemake=7.24.0
+  - perl=5.32.1        # krakenuniq scripts are #!/usr/bin/env perl

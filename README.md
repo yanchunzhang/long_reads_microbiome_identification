@@ -2,6 +2,10 @@
 
 A pipeline for detecting genuine microbiome signals in low-biomass tissues using long-read sequencing (ONT/PacBio). Available in both **Nextflow** and **Snakemake** implementations.
 
+> **Running this on a Mount Sinai account that isn't `zhangy40`?** Start with
+> [HANDOVER.md](HANDOVER.md), then run `bash check_env.sh` to verify you can
+> actually read every database and tool before submitting any jobs.
+
 ## Background
 
 Microbial DNA detection in human tissues is often confounded by contamination. This pipeline implements a DNA fragment length-based metric to discriminate genuine microbial DNA (long fragments) from contaminant DNA (short fragments), as described in:
@@ -61,21 +65,31 @@ Both implementations produce identical outputs.
 | minimap2 | ≥2.24 | conda / module |
 | seqkit | ≥0.10.1 | conda / module |
 | blastn (BLAST+) | ≥2.13.0 | conda / module |
-| krakenuniq | ≥1.0.4 | conda |
-| taxonkit | ≥0.14.1 | conda |
-| python | ≥3.8 | conda |
-| pandas | ≥2.0 | conda |
+| krakenuniq | 1.0.4 | conda |
+| taxonkit | 0.14.1 | standalone binary (not in the conda env) |
+| python | **3.7.12** | conda |
+| pandas | **1.3.5** | conda |
 | Nextflow | ≥22.10 | [nextflow.io](https://www.nextflow.io/) |
-| Snakemake | ≥7.0 | conda |
+| Snakemake | 7.24.0 | conda |
+
+> **Pin python and pandas.** The published results were produced with python
+> 3.7.12 / pandas 1.3.5. pandas 2.x changes groupby and median semantics, both of
+> which the MLA metric depends on, so a "newer is fine" environment will silently
+> produce different numbers. Exact versions for all 341 packages are in
+> `env/myenv.explicit.lock.txt`.
 
 ### Databases
 
 | Database | Size | Notes |
 |---|---|---|
-| KrakenUniq microbial DB (primary) | ~180 GB | See [KrakenUniq docs](https://github.com/fbreitwieser/krakenuniq) |
-| KrakenUniq supplemental DB (viral+fungal) | ~47 GB | Optional; build with `db/build_supplemental_db_v2.sh` |
-| NCBI nt (BLAST) | ~500 GB | `update_blastdb.pl nt` |
-| T2T CHM13v2 reference | ~3 GB | Pre-built minimap2 index (`.mmi`) recommended |
+| KrakenUniq microbial DB (primary) | 544 GB | See [KrakenUniq docs](https://github.com/fbreitwieser/krakenuniq) |
+| KrakenUniq supplemental DB (viral+fungal) | 130 GB | Optional; build with `db/build_supplemental_db_v2.sh` |
+| NCBI nt (BLAST) | 534 GB (179 volumes, 2024-08-31) | `update_blastdb.pl nt` |
+| T2T CHM13v2 minimap2 index | 7.1 GB (`.mmi`) | 28 GB for the full reference directory |
+
+Sizes above are measured from the Mount Sinai installation, not estimates. Total
+is **~1.2 TB**, which is why these are shared in place rather than copied — see
+[HANDOVER.md](HANDOVER.md).
 
 #### Building the supplemental database
 

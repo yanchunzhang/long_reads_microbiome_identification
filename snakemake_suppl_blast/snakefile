@@ -4,7 +4,10 @@ import glob
 import os
 
 # Activate conda environment on every compute node before running shell commands
-shell.prefix("module load anaconda3 seqkit && export PATH=/hpc/users/zhangy40/bin:/hpc/users/zhangy40/schzrnas/softwares/conda/env/myenv/bin:$PATH && ")
+# NOTE: this directory is an OLDER variant, kept for reference. The maintained
+# entry points are ../snakemake/ and ../nextflow/ — use those. Paths here were
+# repointed off /hpc/users/zhangy40 (mode 0700) so they at least resolve.
+shell.prefix("module load anaconda3 seqkit && export PATH=/sc/arion/projects/schzrnas/zhangy40/softwares/conda/env/myenv/bin:/sc/arion/projects/schzrnas/zhangy40/softwares:$PATH && ")
 
 os.makedirs("logs", exist_ok=True)
 

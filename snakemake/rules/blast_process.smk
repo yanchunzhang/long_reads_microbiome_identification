@@ -9,7 +9,7 @@ rule process_blast:
     resources:
         mem_mb=config.get("resources", {}).get("blast_process_mem_mb", 8000)
     params:
-        taxonkit_data_dir=config.get("taxonkit_data_dir", "/hpc/users/zhangy40/.taxonkit")
+        taxonkit_data_dir=config.get("taxonkit_data_dir", "/sc/arion/projects/schzrnas/zhangy40/softwares/taxdump")
     log:
         "logs/{sample}.process_blast.log"
     shell:
