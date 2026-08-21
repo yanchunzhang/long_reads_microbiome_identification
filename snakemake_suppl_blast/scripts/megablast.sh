@@ -1,4 +1,9 @@
-ml blast/2.13.0+
+#!/usr/bin/env bash
+
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)/lib/hpc_modules.sh"
+load_tool blastn blast/2.13.0+
+require_tools blastn
+
 query=$1
 db=$2
 out=$3

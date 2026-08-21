@@ -32,13 +32,17 @@
 
 set -euo pipefail
 
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/lib/hpc_modules.sh"
+load_tool python anaconda3
+require_tools python
+
+
 # ── Configuration ─────────────────────────────────────────────────────────────
 SUPDB="/sc/arion/projects/schzrnas/zhangy40/softwares/kuniq_supplemental_vf_db_v2"
 THREADS=8
 MIN_CONTIG_FUNGI=5000
 
 # ── Environment ───────────────────────────────────────────────────────────────
-module load anaconda3
 set +u
 conda activate myenv
 set -u

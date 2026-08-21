@@ -67,10 +67,17 @@ echo "  PIPELINE_TOOLS   : $TOOLS_DIR"
 # shadow myenv's python 3.7 with python 3.13 (and lose pandas 1.3.5).
 # This mirrors the ordering in snakefile shell.prefix and run_snakemake.sh.
 module load anaconda3 seqkit >/dev/null 2>&1 || warn "'module load anaconda3 seqkit' failed"
-module load blast/2.13.0+     >/dev/null 2>&1 || true
-module load samtools/1.21     >/dev/null 2>&1 || true
-module load minimap2/2.24     >/dev/null 2>&1 || true
 export PATH="$ENV_BIN:$TOOLS_DIR:$PATH"
+
+# Resolve the remaining tools through the SAME helper the pipeline uses, with
+# the same module names. Loading them here by hand would make this preflight
+# more capable than the pipeline and hide a missing load_tool call -- which is
+# exactly how an unguarded `ml blast/2.13.0+` in megablast.sh went unnoticed.
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/hpc_modules.sh"
+load_tool samtools samtools/1.21
+load_tool minimap2 minimap2
+load_tool blastn   blast/2.13.0+
+load_tool seqkit   seqkit
 
 hdr "Tools on PATH"
 check_tool() {  # name, version-cmd, expected-substring (optional)

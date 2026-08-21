@@ -32,6 +32,11 @@
 
 set -euo pipefail
 
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/lib/hpc_modules.sh"
+load_tool python anaconda3
+require_tools python
+
+
 # ── Configuration ─────────────────────────────────────────────────────────────
 SUPDB="/sc/arion/projects/schzrnas/zhangy40/softwares/kuniq_supplemental_vf_db"
 THREADS=8
@@ -40,7 +45,6 @@ WORK_DIR="/sc/arion/scratch/zhangy40/suppl_db_build"
 LOG_PREFIX="[$(date '+%Y-%m-%d %H:%M:%S')]"
 
 # ── Environment ───────────────────────────────────────────────────────────────
-module load anaconda3
 set +u  # conda activate scripts reference unbound vars (libxml2 known issue)
 conda activate myenv
 set -u
