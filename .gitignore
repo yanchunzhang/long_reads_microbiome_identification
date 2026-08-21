@@ -37,3 +37,8 @@ __pycache__/
 
 # System
 .DS_Store
+
+# ...but the environment lock files are provenance, not data, and must ship
+# (the blanket *.txt rule above would otherwise drop them silently).
+!env/myenv.explicit.lock.txt
+!env/myenv.full_versions.txt
