@@ -16,14 +16,20 @@ scheduler profiles, the config template, and tool installation.
 | What | Where | Size | Fallback if you lack access |
 |---|---|---|---|
 | **Tools** (conda env, taxonkit, taxdump, this repo) | `/sc/arion/projects/schzrnas/zhangy40/softwares/` | ~3.4 GB | **Yes** — copy staged at `/sc/arion/projects/fangg03a/zhangy40/long_read_microbiome/` |
-| **Databases** (BLAST `nt`, 2 KrakenUniq DBs, CHM13 T2T) | `/sc/arion/projects/schzrnas/zhangy40/` | **~1.2 TB** | **No** — you must be in group `schzrnas` |
+| **Databases** (BLAST `nt`, 2 KrakenUniq DBs, CHM13 T2T, taxdump) | `/sc/arion/projects/schzrnas/zhangy40/` | **~1.2 TB** | **Yes** — copied 2026-08-21 to `fangg03a/zhangy40/long_read_microbiome/db/` |
 
-The databases are the binding constraint. **Anyone running this pipeline needs
-membership in the `schzrnas` Unix group.** Request it from Minerva HPC support;
-the `schzrnas` allocation is owned by `fangg03` (the PI), so this is an in-lab
-approval. That costs one ticket and zero bytes.
+**As of 2026-08-21 the databases have been copied**, so a `fangg03a` member
+needs nothing further: every path probes `schzrnas` first and falls through to
+the copy automatically. All five were verified byte-identical to their sources,
+and the copies were checked functionally (BLAST `nt` opens and reports the
+expected Aug 31 2024 release; both KrakenUniq DBs have intact
+`database.idx`/`database.kdb`/`taxDB`; taxonkit resolves lineages).
 
-### If the group request is refused
+`schzrnas` group membership is still worth requesting. It removes the need for a
+second copy that will drift from the original as databases are updated, and it
+is the only way to read the originals directly.
+
+### Re-staging or updating the copies
 
 Every database path is already wired to probe `schzrnas` first and fall back to
 `/sc/arion/projects/fangg03a/zhangy40/long_read_microbiome/db/`, so copying them

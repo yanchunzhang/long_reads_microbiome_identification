@@ -151,8 +151,16 @@ for f in nodes.dmp names.dmp merged.dmp delnodes.dmp; do
     [[ -r "$TAXDUMP/$f" ]] && ok "taxdump/$f" || bad "taxdump/$f unreadable (dir: $TAXDUMP)"
 done
 
-BLASTDB_DIR="$SCHZ/softwares/blast_db"
-[[ -r "$BLASTDB_DIR" ]] || BLASTDB_DIR="$FANG/db/blast_db"
+# Honour the override first, then primary, then fallback -- same order as the
+# pipeline. Without this the check silently validates a DIFFERENT database than
+# the run will use.
+if [[ -n "${PIPELINE_BLASTDB:-}" ]]; then
+    BLASTDB_DIR="$(dirname "$PIPELINE_BLASTDB")"
+elif [[ -r "$SCHZ/softwares/blast_db" ]]; then
+    BLASTDB_DIR="$SCHZ/softwares/blast_db"
+else
+    BLASTDB_DIR="$FANG/db/blast_db"
+fi
 if [[ -r "$BLASTDB_DIR" ]] && compgen -G "$BLASTDB_DIR/nt.*" >/dev/null; then
     ok "BLAST nt ($(ls "$BLASTDB_DIR"/nt.*.nin 2>/dev/null | wc -l) volumes)"
     if command -v blastdbcmd >/dev/null 2>&1; then
