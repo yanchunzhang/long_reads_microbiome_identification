@@ -15,7 +15,7 @@ scheduler profiles, the config template, and tool installation.
 
 | What | Where | Size | Fallback if you lack access |
 |---|---|---|---|
-| **Tools** (conda env, taxonkit, taxdump, this repo) | `/sc/arion/projects/schzrnas/zhangy40/softwares/` | ~3.4 GB | **Yes** — copy staged at `/sc/arion/projects/fangg03a/long_read_microbiome/` |
+| **Tools** (conda env, taxonkit, taxdump, this repo) | `/sc/arion/projects/schzrnas/zhangy40/softwares/` | ~3.4 GB | **Yes** — copy staged at `/sc/arion/projects/fangg03a/zhangy40/long_read_microbiome/` |
 | **Databases** (BLAST `nt`, 2 KrakenUniq DBs, CHM13 T2T) | `/sc/arion/projects/schzrnas/zhangy40/` | **~1.2 TB** | **No** — you must be in group `schzrnas` |
 
 The databases are the binding constraint. They are far too large to duplicate,
@@ -58,8 +58,8 @@ There is nothing to install. Tool locations resolve automatically at run time:
 To force the copy explicitly:
 
 ```bash
-export PIPELINE_ENV_BIN=/sc/arion/projects/fangg03a/long_read_microbiome/env/myenv/bin
-export PIPELINE_TOOLS=/sc/arion/projects/fangg03a/long_read_microbiome/bin
+export PIPELINE_ENV_BIN=/sc/arion/projects/fangg03a/zhangy40/long_read_microbiome/env/myenv/bin
+export PIPELINE_TOOLS=/sc/arion/projects/fangg03a/zhangy40/long_read_microbiome/bin
 ```
 
 **Do not run `conda activate`.** The pipeline only prepends the env's `bin` to

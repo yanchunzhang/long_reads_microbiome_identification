@@ -38,7 +38,7 @@ resolve_site_path() {
 }
 
 SCHZ=/sc/arion/projects/schzrnas/zhangy40
-FANG=/sc/arion/projects/fangg03a/long_read_microbiome
+FANG=/sc/arion/projects/fangg03a/zhangy40/long_read_microbiome
 
 ENV_BIN="$(resolve_site_path PIPELINE_ENV_BIN "$SCHZ/softwares/conda/env/myenv/bin" "$FANG/env/myenv/bin")"
 TOOLS_DIR="$(resolve_site_path PIPELINE_TOOLS "$SCHZ/softwares" "$FANG/bin")"

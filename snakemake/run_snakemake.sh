@@ -75,10 +75,10 @@ resolve_site_path() {
 
 ENV_BIN="$(resolve_site_path PIPELINE_ENV_BIN \
     /sc/arion/projects/schzrnas/zhangy40/softwares/conda/env/myenv/bin \
-    /sc/arion/projects/fangg03a/long_read_microbiome/env/myenv/bin)"
+    /sc/arion/projects/fangg03a/zhangy40/long_read_microbiome/env/myenv/bin)"
 TOOLS_DIR="$(resolve_site_path PIPELINE_TOOLS \
     /sc/arion/projects/schzrnas/zhangy40/softwares \
-    /sc/arion/projects/fangg03a/long_read_microbiome/bin)"
+    /sc/arion/projects/fangg03a/zhangy40/long_read_microbiome/bin)"
 export PATH="$ENV_BIN:$TOOLS_DIR:$PATH"
 
 # --- repo locations (this script lives in <repo>/snakemake/) ---------------

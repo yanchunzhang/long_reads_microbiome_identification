@@ -20,11 +20,11 @@ def _resolve_site_path(env_var, candidates):
 
 ENV_BIN = _resolve_site_path("PIPELINE_ENV_BIN", [
     "/sc/arion/projects/schzrnas/zhangy40/softwares/conda/env/myenv/bin",
-    "/sc/arion/projects/fangg03a/long_read_microbiome/env/myenv/bin",
+    "/sc/arion/projects/fangg03a/zhangy40/long_read_microbiome/env/myenv/bin",
 ])
 TOOLS_DIR = _resolve_site_path("PIPELINE_TOOLS", [
     "/sc/arion/projects/schzrnas/zhangy40/softwares",
-    "/sc/arion/projects/fangg03a/long_read_microbiome/bin",
+    "/sc/arion/projects/fangg03a/zhangy40/long_read_microbiome/bin",
 ])
 
 # Activate conda environment on every compute node before running shell commands.
