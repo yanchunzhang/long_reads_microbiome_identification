@@ -3,6 +3,8 @@
 //   PROCESS_BLAST          – multi-threaded BLAST hit processing (Python)
 //   ANNOTATE_BLAST_LENGTHS – join KrakenUniq read-length info, reformat with
 //                            taxonkit, and filter to microbial kingdom hits
+//   FILTER_ONT_ARTIFACTS   – subtract end-barcode/adapter overlap from BLAST
+//                            support and re-apply the query-coverage cutoff
 //
 // Mirrors Snakemake rules: process_blast, annotate_blast_lengths
 
@@ -51,7 +53,8 @@ process PROCESS_BLAST {
 //
 // Emits two named output channels:
 //   .add_length  → [sample, *.blast.processed.add_length.txt]
-//   .microbiome  → [sample, *.blast.microbiome.txt]  (used downstream)
+//   .microbiome_pre_filter → preliminary microbial calls; FILTER_ONT_ARTIFACTS
+//                             turns these into *.blast.microbiome.txt
 
 process ANNOTATE_BLAST_LENGTHS {
     tag "${sample}"
@@ -63,7 +66,7 @@ process ANNOTATE_BLAST_LENGTHS {
 
     output:
     tuple val(sample), path("${sample}.blast.processed.add_length.txt"), emit: add_length
-    tuple val(sample), path("${sample}.blast.microbiome.txt"),           emit: microbiome
+    tuple val(sample), path("${sample}.blast.microbiome.pre_ont_filter.txt"), emit: microbiome_pre_filter
 
     script:
     // Note: \$ is required inside Nextflow """ blocks to pass a literal $
@@ -81,9 +84,72 @@ process ANNOTATE_BLAST_LENGTHS {
     sed 's/ /_/g' | \\
     sort -k7,7 -k3,3 > ${sample}.blast.processed.add_length.txt
 
-    awk '\$6>0.5 && !/k__unclass/ && !/g__unclass/ && /k__/ && \\
+    awk '\$6>${params.blast_min_query_coverage} && !/k__unclass/ && !/g__unclass/ && /k__/ && \\
          !/k__Metazoa/ && \\
          (!/k__Euka/ || /(p__Ascomycota|p__Basidiomycota|p__Mucoromycota|p__Chytridiomycota)/)' \\
-        ${sample}.blast.processed.add_length.txt > ${sample}.blast.microbiome.txt
+        ${sample}.blast.processed.add_length.txt > ${sample}.blast.microbiome.pre_ont_filter.txt
+    """
+}
+
+
+// ── 3. Remove ONT barcode/adapter-derived BLAST support ───────────────────
+// A barcode hit alone is not grounds to discard a read.  The helper subtracts
+// only the overlap between an end-localized ONT hit and the representative
+// target's BLAST HSPs, then re-applies the same strict query-coverage cutoff.
+process FILTER_ONT_ARTIFACTS {
+    tag "${sample}"
+
+    publishDir "${params.outdir}/${sample}", mode: 'copy'
+
+    input:
+    tuple val(sample), path(microbiome_pre_filter), path(raw_blast), path(query_fasta), path(adapter_fasta)
+
+    output:
+    tuple val(sample), path("${sample}.blast.microbiome.txt"), emit: microbiome
+    tuple val(sample), path("${sample}.blast.ont_adapter_filter.audit.tsv"), emit: audit
+    tuple val(sample), path("${sample}.blast.ont_adapter_filtered_out.txt"), emit: filtered_out
+    tuple val(sample), path("${sample}.blast.ont_adapter_hits.tsv"), emit: adapter_hits
+
+    script:
+    def filterEnabled = params.filter_ont_adapters.toString().toLowerCase() != 'false'
+    def disabled = filterEnabled ? '' : '--disabled'
+    def enabledText = filterEnabled ? 'true' : 'false'
+    """
+    set -euo pipefail
+
+    source ${projectDir}/../lib/hpc_modules.sh
+    load_tool blastn blast/2.13.0+
+    require_tools blastn
+
+    if [[ "${enabledText}" == "false" ]]; then
+        : > ${sample}.blast.ont_adapter_hits.tsv
+    else
+        blastn -task blastn-short \
+          -query ${query_fasta} \
+          -subject ${adapter_fasta} \
+          -strand both \
+          -word_size 7 \
+          -perc_identity ${params.ont_adapter_min_identity} \
+          -max_hsps 10 \
+          -dust no \
+          -soft_masking false \
+          -evalue 1000 \
+          -num_threads ${task.cpus} \
+          -outfmt '6 qseqid sseqid pident length mismatch gapopen qstart qend sstart send evalue bitscore' \
+          -out ${sample}.blast.ont_adapter_hits.tsv
+    fi
+
+    python ${params.scriptsdir}/filter_ont_artifacts_after_blast.py \
+      --microbiome ${microbiome_pre_filter} \
+      --raw-blast ${raw_blast} \
+      --ont-hits ${sample}.blast.ont_adapter_hits.tsv \
+      --output ${sample}.blast.microbiome.txt \
+      --audit-output ${sample}.blast.ont_adapter_filter.audit.tsv \
+      --filtered-output ${sample}.blast.ont_adapter_filtered_out.txt \
+      --end-window ${params.ont_adapter_end_window} \
+      --min-overlap ${params.ont_adapter_min_overlap} \
+      --min-identity ${params.ont_adapter_min_identity} \
+      --min-query-coverage ${params.blast_min_query_coverage} \
+      ${disabled}
     """
 }

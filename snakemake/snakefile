@@ -76,6 +76,12 @@ config["blastdb"] = _resolve_db(
 config["t2t_ref"] = _resolve_db(
     "PIPELINE_T2T_REF", config.get("t2t_ref"), f"{FANG_DB}/CHM13_T2T/chm13v2.0.mmi")
 
+# Resolve the small bundled ONT sequence reference relative to this Snakefile,
+# not the per-dataset working directory selected with --directory.
+if not config.get("ont_adapter_fasta"):
+    config["ont_adapter_fasta"] = os.path.join(
+        workflow.basedir, "resources", "ont_barcode_adapter_sequences.fasta")
+
 # ── Validate required config up front ─────────────────────────────────────
 # Report every missing/unreadable path at once, before any job is submitted.
 # Without this an unset database surfaces as a "file not found" inside a job
@@ -89,6 +95,8 @@ def _validate_config():
     ]
     if str(config.get("use_suppl_db", True)).lower() != "false":
         required.append(("kraken_db_suppl", "supplemental viral+fungal KrakenUniq DB"))
+    if str(config.get("filter_ont_adapters", True)).lower() != "false":
+        required.append(("ont_adapter_fasta", "ONT barcode/adapter FASTA"))
 
     problems = []
     for key, desc in required:

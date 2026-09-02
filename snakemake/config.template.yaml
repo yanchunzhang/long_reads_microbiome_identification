@@ -34,6 +34,18 @@ taxonkit_data_dir: ""
 # Human: T2T CHM13v2.0. Mouse: GRCm39 (or pass -r on the command line).
 t2t_ref: ""
 
+# ── ONT post-BLAST artifact filter ──────────────────────────────────────────
+# Empty ont_adapter_fasta uses the bundled NB01-NB24 + common ONT adapter file.
+# Set filter_ont_adapters: false for PacBio/HiFi or already-trimmed non-ONT data.
+# A hit does not automatically remove a read: only adapter-overlapping BLAST
+# support is subtracted before the strict query-coverage cutoff is re-applied.
+filter_ont_adapters: true
+ont_adapter_fasta: ""
+ont_adapter_end_window: 150
+ont_adapter_min_overlap: 18
+ont_adapter_min_identity: 80.0
+blast_min_query_coverage: 0.5
+
 # ── Scheduler ────────────────────────────────────────────────────────────────
 lsf:
   project: ""              # LSF billing account; ignored off LSF
@@ -49,6 +61,7 @@ threads:
   krakenuniq: 2
   megablast: 16
   median_length_adj: 1
+  ont_adapter_filter: 2
 
 resources:
   unmapped_analysis_mem_mb: 12000
@@ -57,6 +70,7 @@ resources:
   megablast_mem_mb: 30000
   blast_process_mem_mb: 30000
   median_length_adj_mem_mb: 8000
+  ont_adapter_filter_mem_mb: 4000
 
 batch:
   blast_chunk_size: 10000

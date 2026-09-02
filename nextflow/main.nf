@@ -13,7 +13,8 @@ include { SPLIT_BLAST_QUERY;
           MEGABLAST_CHUNK;
           MERGE_BLAST_CHUNKS }      from './modules/blast'
 include { PROCESS_BLAST;
-          ANNOTATE_BLAST_LENGTHS }  from './modules/blast_process'
+          ANNOTATE_BLAST_LENGTHS;
+          FILTER_ONT_ARTIFACTS }    from './modules/blast_process'
 include { MEDIAN_LENGTH_ADJ }       from './modules/median_length_adj'
 
 // ── Workflow ──────────────────────────────────────────────────────────────
@@ -143,9 +144,20 @@ workflow {
 
     ANNOTATE_BLAST_LENGTHS(ch_annotate)
 
-    // Step 7: Median-length-adjusted microbiome abundance
+    // Step 7: Remove ONT barcode/adapter-derived BLAST support.  The raw
+    // preliminary table is retained alongside the final and audit outputs.
+    ch_ont_filter = ANNOTATE_BLAST_LENGTHS.out.microbiome_pre_filter
+        .join(MERGE_BLAST_CHUNKS.out)
+        .join(ch_blast_fasta)
+        .map { sample, microbiome, blast, fasta ->
+            tuple(sample, microbiome, blast, fasta, file(params.ont_adapter_fasta))
+        }
+
+    FILTER_ONT_ARTIFACTS(ch_ont_filter)
+
+    // Step 8: Median-length-adjusted microbiome abundance
     ch_final = ch_stats
-        .join(ANNOTATE_BLAST_LENGTHS.out.microbiome)
+        .join(FILTER_ONT_ARTIFACTS.out.microbiome)
 
     MEDIAN_LENGTH_ADJ(ch_final)
 }

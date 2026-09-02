@@ -41,9 +41,11 @@ rule annotate_blast_lengths:
         processed="{sample}/{sample}.blast.processed.txt"
     output:
         add_length="{sample}/{sample}.blast.processed.add_length.txt",
-        other_microbiome="{sample}/{sample}.blast.microbiome.txt"
+        microbiome_pre_filter="{sample}/{sample}.blast.microbiome.pre_ont_filter.txt"
     resources:
         mem_mb=config.get("resources", {}).get("blast_process_mem_mb", 8000)
+    params:
+        min_query_coverage=config.get("blast_min_query_coverage", 0.5)
     log:
         "logs/{sample}.annotate_blast_lengths.log"
     shell:
@@ -60,8 +62,72 @@ rule annotate_blast_lengths:
         sed 's/ /_/g' | \
         sort -k7,7 -k3,3 > {output.add_length} 2> {log}
 
-        awk '$6>0.5 && !/k__unclass/ && !/g__unclass/ && /k__/ && \
+        awk '$6>{params.min_query_coverage} && !/k__unclass/ && !/g__unclass/ && /k__/ && \
              !/k__Metazoa/ && \
              (!/k__Euka/ || /(p__Ascomycota|p__Basidiomycota|p__Mucoromycota|p__Chytridiomycota)/)' \
-          {output.add_length} > {output.other_microbiome} 2>> {log}
+          {output.add_length} > {output.microbiome_pre_filter} 2>> {log}
+        """
+
+rule filter_ont_artifacts_after_blast:
+    input:
+        microbiome="{sample}/{sample}.blast.microbiome.pre_ont_filter.txt",
+        raw_blast="{sample}/{sample}.blast.txt",
+        query_fasta="{sample}/{sample}.merged.krakenuniq.microbiome.fasta" if USE_SUPPL_DB else "{sample}/{sample}.krakenuniq.microbiome.fasta",
+        adapters=config["ont_adapter_fasta"]
+    output:
+        microbiome="{sample}/{sample}.blast.microbiome.txt",
+        audit="{sample}/{sample}.blast.ont_adapter_filter.audit.tsv",
+        filtered="{sample}/{sample}.blast.ont_adapter_filtered_out.txt",
+        adapter_hits="{sample}/{sample}.blast.ont_adapter_hits.tsv"
+    threads: config.get("threads", {}).get("ont_adapter_filter", 2)
+    resources:
+        mem_mb=config.get("resources", {}).get("ont_adapter_filter_mem_mb", 4000)
+    params:
+        enabled=str(config.get("filter_ont_adapters", True)).lower(),
+        disabled="" if str(config.get("filter_ont_adapters", True)).lower() != "false" else "--disabled",
+        end_window=config.get("ont_adapter_end_window", 150),
+        min_overlap=config.get("ont_adapter_min_overlap", 18),
+        min_identity=config.get("ont_adapter_min_identity", 80.0),
+        min_query_coverage=config.get("blast_min_query_coverage", 0.5),
+        hpc_modules=os.path.abspath(os.path.join(workflow.basedir, "..", "lib", "hpc_modules.sh"))
+    log:
+        "logs/{sample}.filter_ont_artifacts_after_blast.log"
+    shell:
+        r"""
+        set -euo pipefail
+
+        source {params.hpc_modules}
+        load_tool blastn blast/2.13.0+
+        require_tools blastn
+
+        if [[ "{params.enabled}" == "false" ]]; then
+            : > {output.adapter_hits}
+        else
+            blastn -task blastn-short \
+              -query {input.query_fasta} \
+              -subject {input.adapters} \
+              -strand both \
+              -word_size 7 \
+              -perc_identity {params.min_identity} \
+              -max_hsps 10 \
+              -dust no \
+              -soft_masking false \
+              -evalue 1000 \
+              -num_threads {threads} \
+              -outfmt '6 qseqid sseqid pident length mismatch gapopen qstart qend sstart send evalue bitscore' \
+              -out {output.adapter_hits} 2> {log}
+        fi
+
+        python {config[scriptsdir]}/filter_ont_artifacts_after_blast.py \
+          --microbiome {input.microbiome} \
+          --raw-blast {input.raw_blast} \
+          --ont-hits {output.adapter_hits} \
+          --output {output.microbiome} \
+          --audit-output {output.audit} \
+          --filtered-output {output.filtered} \
+          --end-window {params.end_window} \
+          --min-overlap {params.min_overlap} \
+          --min-identity {params.min_identity} \
+          --min-query-coverage {params.min_query_coverage} \
+          {params.disabled} >> {log} 2>&1
         """

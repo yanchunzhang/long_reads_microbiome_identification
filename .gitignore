@@ -42,3 +42,7 @@ __pycache__/
 # (the blanket *.txt rule above would otherwise drop them silently).
 !env/myenv.explicit.lock.txt
 !env/myenv.full_versions.txt
+
+# Small, versioned ONT artifact references required by both workflows.
+!nextflow/resources/ont_barcode_adapter_sequences.fasta
+!snakemake/resources/ont_barcode_adapter_sequences.fasta
