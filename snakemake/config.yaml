@@ -40,7 +40,7 @@ resources:
   megablast_mem_mb: 30000
   blast_process_mem_mb: 30000
   median_length_adj_mem_mb: 8000
-  ont_adapter_filter_mem_mb: 4000
+  ont_adapter_filter_mem_mb: 8000
 
 batch:
   blast_chunk_size: 10000

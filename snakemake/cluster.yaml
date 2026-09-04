@@ -56,8 +56,8 @@ process_blast:
 filter_ont_artifacts_after_blast:
   queue: express
   time: "1:00"
-  mem_mb: 4000
-  extra: "-R 'rusage[mem=4000] span[hosts=1]'"
+  mem_mb: 8000
+  extra: "-R 'rusage[mem=8000] span[hosts=1]'"
 
 median_length_adj:
   queue: premium
