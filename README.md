@@ -38,9 +38,9 @@ BAM (long-read, aligned to human reference)
 2. **Human read length distribution** — `samtools stats` is run on the original BAM to obtain the median human read length, used later for normalization.
 3. **Taxonomic classification** — Candidate reads are classified with KrakenUniq against the primary MicrobialDB database. If `use_suppl_db=true`, a supplemental viral+fungal database is run in parallel and the results are merged (primary DB has priority; duplicate read IDs are deduplicated).
 4. **BLAST validation** — KrakenUniq-classified microbial reads are aligned to NCBI nt using megaBLAST. The best hit per read (largest alignment coverage) is retained; only hits with coverage >0.5 are kept.
-5. **ONT artifact filter** — NB01–NB24 and common ONT adapter sequences are searched against both read orientations. Only hits of at least 18 bp and 80% identity within 150 bp of a read end are accepted. Bases where an accepted ONT hit overlaps the representative target's BLAST HSPs are subtracted from covered query bases; a call is removed only if adjusted query coverage is no longer >0.5. Thus, a valid long microbial read is not discarded merely because it retains a barcode. Disable this ONT-specific step for PacBio/HiFi with `filter_ont_adapters=false`.
+5. **ONT artifact filter** — Complete NB01–NB24 native-barcode constructs and common ONT adapter sequences are searched against both read orientations. Hits of at least 12 bp and 90% identity are merged without double-counting; a call is removed when ONT technical sequence covers at least 40% of the full read. This single construct-dominance rule replaces the earlier adjusted-BLAST-coverage rule. Disable this ONT-specific step for PacBio/HiFi with `filter_ont_adapters=false`.
 
-   The bundled reference records the exact NB01–NB24 cores used by the GFM mock workflow plus the Rapid, SQK-MAP006/short, and PCR adapter definitions from Porechop's adapter catalogue. Its SHA-256 is `702142ce260d71d9c1254c1f3a3787e66bbb051736630f1edd6339ee32bf4cc3`.
+   The bundled reference records the exact NB01–NB24 cores used by the GFM mock workflow, their complete LSK110/native-barcode constructs, and the Rapid, SQK-MAP006/short, and PCR adapter definitions from Porechop's adapter catalogue. Its SHA-256 is `2e512a246a28ebd30c5ca33644e6d9c2d56d7872af00ea73ef66e3384402e4c9`.
 6. **Genus-level aggregation** — Microbial reads are grouped by genus (≥5 reads per genus required).
 7. **Median(L)adj calculation** — The key metric:
 
@@ -299,8 +299,8 @@ Per sample:
 | `<sample>.blast.txt` | Merged megaBLAST results |
 | `<sample>.blast.microbiome.pre_ont_filter.txt` | BLAST-validated microbial hits before ONT filtering (preserved legacy-style result) |
 | `<sample>.blast.ont_adapter_hits.tsv` | Raw short-BLAST matches to the ONT barcode/adapter reference |
-| `<sample>.blast.ont_adapter_filter.audit.tsv` | Per-affected-read coverage adjustment and retain/filter decision |
-| `<sample>.blast.ont_adapter_filtered_out.txt` | Calls removed after subtracting ONT-overlapping BLAST support |
+| `<sample>.blast.ont_adapter_filter.audit.tsv` | Per-affected-read merged technical coverage and retain/filter decision |
+| `<sample>.blast.ont_adapter_filtered_out.txt` | Calls removed by the ONT construct-dominance rule |
 | `<sample>.blast.microbiome.txt` | Final BLAST-validated microbial hits used downstream |
 | `<sample>.microbiome.sum_by_length_per_genus.txt` | Genus-level abundance |
 | `<sample>.median_l_adj.txt` | Fragment length-adjusted microbiome metric |

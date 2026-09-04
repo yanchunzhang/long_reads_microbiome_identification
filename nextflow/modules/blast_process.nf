@@ -3,8 +3,8 @@
 //   PROCESS_BLAST          – multi-threaded BLAST hit processing (Python)
 //   ANNOTATE_BLAST_LENGTHS – join KrakenUniq read-length info, reformat with
 //                            taxonkit, and filter to microbial kingdom hits
-//   FILTER_ONT_ARTIFACTS   – subtract end-barcode/adapter overlap from BLAST
-//                            support and re-apply the query-coverage cutoff
+//   FILTER_ONT_ARTIFACTS   – merge ONT construct intervals and remove reads
+//                            with technical coverage at or above the threshold
 //
 // Mirrors Snakemake rules: process_blast, annotate_blast_lengths
 
@@ -92,17 +92,16 @@ process ANNOTATE_BLAST_LENGTHS {
 }
 
 
-// ── 3. Remove ONT barcode/adapter-derived BLAST support ───────────────────
-// A barcode hit alone is not grounds to discard a read.  The helper subtracts
-// only the overlap between an end-localized ONT hit and the representative
-// target's BLAST HSPs, then re-applies the same strict query-coverage cutoff.
+// ── 3. Remove ONT construct-dominated reads ────────────────────────────────
+// Qualifying barcode/adapter-hit intervals are merged, and a read is removed
+// when their union reaches the configured fraction of the full read.
 process FILTER_ONT_ARTIFACTS {
     tag "${sample}"
 
     publishDir "${params.outdir}/${sample}", mode: 'copy'
 
     input:
-    tuple val(sample), path(microbiome_pre_filter), path(raw_blast), path(query_fasta), path(adapter_fasta)
+    tuple val(sample), path(microbiome_pre_filter), path(query_fasta), path(adapter_fasta)
 
     output:
     tuple val(sample), path("${sample}.blast.microbiome.txt"), emit: microbiome
@@ -141,15 +140,13 @@ process FILTER_ONT_ARTIFACTS {
 
     python ${params.scriptsdir}/filter_ont_artifacts_after_blast.py \
       --microbiome ${microbiome_pre_filter} \
-      --raw-blast ${raw_blast} \
       --ont-hits ${sample}.blast.ont_adapter_hits.tsv \
       --output ${sample}.blast.microbiome.txt \
       --audit-output ${sample}.blast.ont_adapter_filter.audit.tsv \
       --filtered-output ${sample}.blast.ont_adapter_filtered_out.txt \
-      --end-window ${params.ont_adapter_end_window} \
       --min-overlap ${params.ont_adapter_min_overlap} \
       --min-identity ${params.ont_adapter_min_identity} \
-      --min-query-coverage ${params.blast_min_query_coverage} \
+      --min-technical-fraction ${params.ont_adapter_min_technical_fraction} \
       ${disabled}
     """
 }

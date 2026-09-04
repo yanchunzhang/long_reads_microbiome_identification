@@ -144,13 +144,12 @@ workflow {
 
     ANNOTATE_BLAST_LENGTHS(ch_annotate)
 
-    // Step 7: Remove ONT barcode/adapter-derived BLAST support.  The raw
-    // preliminary table is retained alongside the final and audit outputs.
+    // Step 7: Remove reads dominated by merged ONT barcode/adapter constructs.
+    // The raw preliminary table is retained alongside final and audit outputs.
     ch_ont_filter = ANNOTATE_BLAST_LENGTHS.out.microbiome_pre_filter
-        .join(MERGE_BLAST_CHUNKS.out)
         .join(ch_blast_fasta)
-        .map { sample, microbiome, blast, fasta ->
-            tuple(sample, microbiome, blast, fasta, file(params.ont_adapter_fasta))
+        .map { sample, microbiome, fasta ->
+            tuple(sample, microbiome, fasta, file(params.ont_adapter_fasta))
         }
 
     FILTER_ONT_ARTIFACTS(ch_ont_filter)

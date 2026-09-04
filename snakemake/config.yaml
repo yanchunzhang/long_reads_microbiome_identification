@@ -10,14 +10,13 @@ blastdb: "/sc/arion/projects/schzrnas/zhangy40/softwares/blast_db/nt"
 taxonkit_data_dir: "/sc/arion/projects/schzrnas/zhangy40/softwares/taxdump"
 t2t_ref: "/sc/arion/projects/schzrnas/zhangy40/ref/CHM13_T2T/chm13v2.0.mmi"
 
-# Post-BLAST ONT barcode/adapter evidence filter. Detection alone does not
-# discard a read: overlapping bases are removed from BLAST query coverage and
-# the existing strict >0.5 cutoff is re-applied.
+# Post-BLAST ONT construct-dominance filter. Qualifying intervals are merged;
+# reads with >=40% merged technical coverage are removed.
 filter_ont_adapters: true
 ont_adapter_fasta: ""  # empty = bundled resources/ont_barcode_adapter_sequences.fasta
-ont_adapter_end_window: 150
-ont_adapter_min_overlap: 18
-ont_adapter_min_identity: 80.0
+ont_adapter_min_overlap: 12
+ont_adapter_min_identity: 90.0
+ont_adapter_min_technical_fraction: 0.40
 blast_min_query_coverage: 0.5
 
 lsf:

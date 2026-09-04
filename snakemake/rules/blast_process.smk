@@ -71,7 +71,6 @@ rule annotate_blast_lengths:
 rule filter_ont_artifacts_after_blast:
     input:
         microbiome="{sample}/{sample}.blast.microbiome.pre_ont_filter.txt",
-        raw_blast="{sample}/{sample}.blast.txt",
         query_fasta="{sample}/{sample}.merged.krakenuniq.microbiome.fasta" if USE_SUPPL_DB else "{sample}/{sample}.krakenuniq.microbiome.fasta",
         adapters=config["ont_adapter_fasta"]
     output:
@@ -85,10 +84,9 @@ rule filter_ont_artifacts_after_blast:
     params:
         enabled=str(config.get("filter_ont_adapters", True)).lower(),
         disabled="" if str(config.get("filter_ont_adapters", True)).lower() != "false" else "--disabled",
-        end_window=config.get("ont_adapter_end_window", 150),
-        min_overlap=config.get("ont_adapter_min_overlap", 18),
-        min_identity=config.get("ont_adapter_min_identity", 80.0),
-        min_query_coverage=config.get("blast_min_query_coverage", 0.5),
+        min_overlap=config.get("ont_adapter_min_overlap", 12),
+        min_identity=config.get("ont_adapter_min_identity", 90.0),
+        min_technical_fraction=config.get("ont_adapter_min_technical_fraction", 0.40),
         hpc_modules=os.path.abspath(os.path.join(workflow.basedir, "..", "lib", "hpc_modules.sh"))
     log:
         "logs/{sample}.filter_ont_artifacts_after_blast.log"
@@ -120,14 +118,12 @@ rule filter_ont_artifacts_after_blast:
 
         python {config[scriptsdir]}/filter_ont_artifacts_after_blast.py \
           --microbiome {input.microbiome} \
-          --raw-blast {input.raw_blast} \
           --ont-hits {output.adapter_hits} \
           --output {output.microbiome} \
           --audit-output {output.audit} \
           --filtered-output {output.filtered} \
-          --end-window {params.end_window} \
           --min-overlap {params.min_overlap} \
           --min-identity {params.min_identity} \
-          --min-query-coverage {params.min_query_coverage} \
+          --min-technical-fraction {params.min_technical_fraction} \
           {params.disabled} >> {log} 2>&1
         """

@@ -37,13 +37,13 @@ t2t_ref: ""
 # ── ONT post-BLAST artifact filter ──────────────────────────────────────────
 # Empty ont_adapter_fasta uses the bundled NB01-NB24 + common ONT adapter file.
 # Set filter_ont_adapters: false for PacBio/HiFi or already-trimmed non-ONT data.
-# A hit does not automatically remove a read: only adapter-overlapping BLAST
-# support is subtracted before the strict query-coverage cutoff is re-applied.
+# Qualifying ONT-hit intervals are merged; a read is removed when their union
+# covers at least ont_adapter_min_technical_fraction of the full read.
 filter_ont_adapters: true
 ont_adapter_fasta: ""
-ont_adapter_end_window: 150
-ont_adapter_min_overlap: 18
-ont_adapter_min_identity: 80.0
+ont_adapter_min_overlap: 12
+ont_adapter_min_identity: 90.0
+ont_adapter_min_technical_fraction: 0.40
 blast_min_query_coverage: 0.5
 
 # ── Scheduler ────────────────────────────────────────────────────────────────
