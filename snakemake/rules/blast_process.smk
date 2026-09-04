@@ -84,6 +84,7 @@ rule filter_ont_artifacts_after_blast:
     params:
         enabled=str(config.get("filter_ont_adapters", True)).lower(),
         disabled="" if str(config.get("filter_ont_adapters", True)).lower() != "false" else "--disabled",
+        evalue=config.get("ont_adapter_evalue", 10),
         min_overlap=config.get("ont_adapter_min_overlap", 12),
         min_identity=config.get("ont_adapter_min_identity", 90.0),
         min_technical_fraction=config.get("ont_adapter_min_technical_fraction", 0.40),
@@ -110,7 +111,7 @@ rule filter_ont_artifacts_after_blast:
               -max_hsps 10 \
               -dust no \
               -soft_masking false \
-              -evalue 1000 \
+              -evalue {params.evalue} \
               -num_threads {threads} \
               -outfmt '6 qseqid sseqid pident length mismatch gapopen qstart qend sstart send evalue bitscore' \
               -out {output.adapter_hits} 2> {log}

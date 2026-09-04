@@ -132,7 +132,7 @@ process FILTER_ONT_ARTIFACTS {
           -max_hsps 10 \
           -dust no \
           -soft_masking false \
-          -evalue 1000 \
+          -evalue ${params.ont_adapter_evalue} \
           -num_threads ${task.cpus} \
           -outfmt '6 qseqid sseqid pident length mismatch gapopen qstart qend sstart send evalue bitscore' \
           -out ${sample}.blast.ont_adapter_hits.tsv
